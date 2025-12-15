@@ -8,6 +8,7 @@ import mpx.utils.objectives as mpc_objectives
 import mujoco
 from mujoco import mjx
 import mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers as optimizers
+from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMWarmStart
 import numpy as np
 from mujoco.mjx._src.dataclasses import PyTreeNode 
 # Try to import torch for dlpack conversion, but continue if torch is not available
@@ -233,6 +234,9 @@ class MPCControllerWrapper:
         self.U0 = jnp.tile(config.u_ref, (config.N, 1))
         self.X0 = jnp.tile(self.initial_state, (config.N + 1, 1))
         self.V0 = jnp.zeros((config.N + 1, config.n))
+        self.w = jnp.zeros((config.N + 1, 4))
+        self.y = jnp.zeros((config.N + 1, 4))
+        self.rho = jnp.asarray(0.1, dtype=jnp.float32) 
 
         # Define cost, hessian approximation, and dynamics functions for MPC.
         self.cost = partial(config.cost,config.n_joints, config.n_contact, config.N)
@@ -343,18 +347,27 @@ class MPCControllerWrapper:
         )
 
         # Execute the MPC optimization.
-        X, U, V = self._solve(
+        X, U, V, w, y, rho = self._solve(
             reference,
             parameter,
             self.config.W,
             x0,
             self.X0,
             self.U0,
-            self.V0
+            self.V0,
+            self.w,
+            self.y,
+            self.rho
             )
 
         # # Warm-start for the next call: shift trajectories forward.
-
+        self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
+        self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
+        self.rho = jnp.asarray(rho, dtype=self.rho.dtype)
+        rho_cap = 1e5
+        self.rho = jnp.where(self.rho > rho_cap,
+                            self.rho * (1e-1),
+                            self.rho)
         self.U0, self.X0, self.V0, tau_temp, q_temp, dq_temp = self.update_and_extract(U, X, V, x0, self.X0, self.U0)
 
         # TO DO change to values from config
