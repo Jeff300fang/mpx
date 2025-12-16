@@ -364,9 +364,9 @@ class MPCControllerWrapper:
         self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
         self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
         self.rho = jnp.asarray(rho, dtype=self.rho.dtype)
-        rho_cap = 1e5
+        rho_cap = 1e4
         self.rho = jnp.where(self.rho > rho_cap,
-                            self.rho * (1e-1),
+                            8e2,
                             self.rho)
         self.U0, self.X0, self.V0, tau_temp, q_temp, dq_temp = self.update_and_extract(U, X, V, x0, self.X0, self.U0)
 
