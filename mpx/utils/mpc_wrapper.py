@@ -364,10 +364,12 @@ class MPCControllerWrapper:
         self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
         self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
         self.rho = jnp.asarray(rho, dtype=self.rho.dtype)
-        rho_cap = 1e4
+        rho_cap = 1e3
         self.rho = jnp.where(self.rho > rho_cap,
-                            8e2,
+                            1e3,
                             self.rho)
+        self.rho = jnp.maximum(self.rho * 0.9, 0.1)
+        self.y = rho / self.rho * self.y
         self.U0, self.X0, self.V0, tau_temp, q_temp, dq_temp = self.update_and_extract(U, X, V, x0, self.X0, self.U0)
 
         # TO DO change to values from config
@@ -420,8 +422,6 @@ class MPCControllerWrapper:
         #set initial state
 
         x0 = jnp.concatenate([qpos, qvel,foot_op.flatten(),jnp.zeros(3*self.config.n_contact)])
-
-
 
         reference, parameter = self.config.reference(self.config.N + 1,self.config.dt,self.config.n_joints,self.config.n_contact,self.config.p_legs0,self.config.q0)
 
