@@ -412,19 +412,19 @@ def circle_pose_constraint(X, U, obstacle):
 
     return jnp.concatenate([g_circle.reshape(-1), g_u.reshape(-1)], axis=0)
 
-def outside_circle_constraints(X, U, centers, radii):
+def outside_circle_constraints(x, u, t, centers, radii):
     """
-    Enforces: ||(X[t,0:2]) - centers[k]||^2 >= radii[k]^2  for all t,k
-    Written as g <= 0:  radii^2 - dist^2 <= 0
-
-    X: (T+1, n)
-    U: (T, m)  (unused; included for SQP interface)
+    Stage constraint at time t:
+      g_t[k] = r_k^2 - ||x_pos - c_k||^2 <= 0  (outside circle)
+    x: (n,)
+    u: (m,)  (unused)
+    t: scalar (unused)
     centers: (K, 2)
     radii: (K,)
-    Returns: ( (T+1)*K, )
+    returns: (K,)
     """
-    pos = X[:, 0:2]                                  # (T+1, 2)
-    diff = pos[:, None, :] - centers[None, :, :]     # (T+1, K, 2)
-    dist2 = jnp.sum(diff * diff, axis=-1)            # (T+1, K)
-    g = (radii[None, :] ** 2) - dist2                # (T+1, K) <= 0 means outside
-    return g.reshape(-1)
+    pos = x[0:2]                     # (2,)
+    diff = pos[None, :] - centers    # (K, 2)
+    dist2 = jnp.sum(diff * diff, axis=-1)     # (K,)
+    g_t = radii**2 - dist2                     # (K,)
+    return g_t
