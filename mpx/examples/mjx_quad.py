@@ -2,7 +2,6 @@
 import jax.numpy as jnp
 import jax
 import mujoco
-from dataclasses import dataclass
 # Update JAX configuration
 jax.config.update("jax_compilation_cache_dir", "./jax_cache")
 jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
@@ -44,8 +43,58 @@ env = QuadrupedEnv(robot=robot_name,
                    state_obs_names=state_observables_names,  # Desired quantities in the 'state'
                    )
 obs = env.reset(random=False)
+
+
+# --------- Define Constraints ---------
+def render_obstacles(centers, radii):
+    for (cx, cy), radius in zip(centers, radii):
+        cyl_xy = np.array([cx, cy])   # x, y
+        cyl_height = 1.0
+        cyl_radius = radius
+        cyl_z_base = 0.0                # sits on ground
+        cyl_color = np.array([0.6, 0.6, 0.6, 1.0])
+
+        static_cyl_id = -1
+        static_cyl_id = render_static_vertical_cylinder(
+            env.viewer,
+            center_xy=cyl_xy,
+            height=cyl_height,
+            radius=(cyl_radius - 0.33), # Obstacles are inflated to capture size of quadruped
+            z_base=cyl_z_base,
+            color=cyl_color,
+            geom_id=static_cyl_id,
+        )
+
+def random_circles(key, K, radius=0.43, dtype=jnp.float32):
+    """
+    Uniformly sample K circle centers:
+      x ~ U[1, 7], y ~ U[-3, 3]
+    All circles share the same radius.
+
+    Returns:
+      centers: (K, 2)
+      radii:   (K,)
+    """
+    key_x, key_y = jax.random.split(key, 2)
+    x = jax.random.uniform(key_x, (K,), minval=1.0, maxval=7.0, dtype=dtype)
+    y = jax.random.uniform(key_y, (K,), minval=-1.0, maxval=1.0, dtype=dtype)
+    centers = jnp.stack([x, y], axis=1)
+    radii = jnp.full((K,), radius, dtype=dtype)
+    return centers, radii
+
+# Example usage
+key = jax.random.PRNGKey(1)
+centers, radii = random_circles(key, K=10, radius=0.43)
+
+# centers = jnp.array([[2.0, 0.1],
+#                      [4.0, 0.15]], dtype=jnp.float32)
+
+# radii = jnp.array([0.43, 0.43], dtype=jnp.float32)
+# --------------------------------------
+
+
 # Define the MPC wrapper
-mpc = mpc_wrapper.MPCControllerWrapper(config)
+mpc = mpc_wrapper.MPCControllerWrapper(config, centers, radii)
 env.mjData.qpos = jnp.concatenate([config.p0, config.quat0,config.q0])
 env.render()
 ids = []
@@ -67,38 +116,6 @@ dq = jnp.zeros(config.n_joints)
 mpc_time = 0
 mpc.robot_height = config.robot_height
 mpc.reset(env.mjData.qpos.copy(),env.mjData.qvel.copy())
-
-
-# --------- Define Constraints ---------
-@dataclass
-class CircleConstraint:
-    cx: float
-    cy: float
-    radius: float
-
-def render_obstacles(obstacles: list[CircleConstraint]):
-    for obstacle in obstacles:
-        cyl_xy = np.array([obstacle.cx, obstacle.cy])   # x, y
-        cyl_height = 1.0
-        cyl_radius = obstacle.radius
-        cyl_z_base = 0.0                # sits on ground
-        cyl_color = np.array([0.6, 0.6, 0.6, 1.0])
-
-        static_cyl_id = -1
-        static_cyl_id = render_static_vertical_cylinder(
-            env.viewer,
-            center_xy=cyl_xy,
-            height=cyl_height,
-            radius=(cyl_radius - 0.33), # Obstacles are inflated to capture size of quadruped
-            z_base=cyl_z_base,
-            color=cyl_color,
-            geom_id=static_cyl_id,
-        )
-
-obstacles = []
-obstacles.append(CircleConstraint(cx=2.0, cy=0.1, radius=0.43))
-obstacles.append(CircleConstraint(cx=4.0, cy=0.15, radius=0.43))
-# --------------------------------------
 
 while env.viewer.is_running():
  
@@ -129,10 +146,10 @@ while env.viewer.is_running():
                 state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
                 counter += 1
         start = timer()
-        tau, q, dq = mpc.run(qpos,qvel,input,contact)   
+        tau, q, dq = mpc.run(qpos,qvel,input,contact, centers, radii)   
         stop = timer()
         print("Time taken for MPC: ", stop-start)   
-        render_obstacles(obstacles)
+        render_obstacles(centers, radii)
         # for i in range(4):
         #     render_sphere(env.viewer,
         #                   collision_point[3*i:3*i+3],

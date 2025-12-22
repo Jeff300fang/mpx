@@ -3,6 +3,7 @@ from jax import numpy as jnp
 from functools import partial
 from mujoco.mjx._src import math
 from jax.scipy.spatial.transform import Rotation
+from dataclasses import dataclass
 
 def timer_run(duty_factor,step_freq, leg_time, dt):
     # Extract relevant fields
@@ -397,3 +398,33 @@ def reference_barell_roll(N,dt,n_joints,n_contact,foot0,q0):
     grf_ref = jnp.zeros((N, 3*n_contact))
 
     return jnp.concatenate([p_ref, quat_ref, q_ref, dp_ref, omega_ref, foot_ref, contact_sequence, grf_ref], axis=1), jnp.concatenate([contact_sequence, foot_ref], axis=1)
+
+def circle_pose_constraint(X, U, obstacle):
+    # X: (T+1, n), U: (T, m)
+    # Example 1: state stays inside a circle of radius r (convex)
+    r = obstacle.radius
+    pos = X[:, :2]
+    g_circle = jnp.sum(pos**2, axis=-1) - r**2          # (T+1,), <= 0
+
+    # Example 2: control effort magnitude constraint ||u_t||^2 <= umax^2
+    umax = 0.5
+    g_u = jnp.sum(U**2, axis=-1) - umax**2              # (T,), <= 0
+
+    return jnp.concatenate([g_circle.reshape(-1), g_u.reshape(-1)], axis=0)
+
+def outside_circle_constraints(X, U, centers, radii):
+    """
+    Enforces: ||(X[t,0:2]) - centers[k]||^2 >= radii[k]^2  for all t,k
+    Written as g <= 0:  radii^2 - dist^2 <= 0
+
+    X: (T+1, n)
+    U: (T, m)  (unused; included for SQP interface)
+    centers: (K, 2)
+    radii: (K,)
+    Returns: ( (T+1)*K, )
+    """
+    pos = X[:, 0:2]                                  # (T+1, 2)
+    diff = pos[:, None, :] - centers[None, :, :]     # (T+1, K, 2)
+    dist2 = jnp.sum(diff * diff, axis=-1)            # (T+1, K)
+    g = (radii[None, :] ** 2) - dist2                # (T+1, K) <= 0 means outside
+    return g.reshape(-1)

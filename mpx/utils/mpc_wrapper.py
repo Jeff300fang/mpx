@@ -11,6 +11,7 @@ import mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers as optimizers
 from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMWarmStart
 import numpy as np
 from mujoco.mjx._src.dataclasses import PyTreeNode 
+from mpx.utils.mpc_utils import outside_circle_constraints
 # Try to import torch for dlpack conversion, but continue if torch is not available
 from timeit import default_timer as timer
 # MJX style class to store all the data needed for the MPC controller   
@@ -193,7 +194,7 @@ class BatchedMPCControllerWrapper:
         return data
 
 class MPCControllerWrapper:
-    def __init__(self, config,limited_memory=False):
+    def __init__(self, config, centers: jnp.ndarray, radii: jnp.ndarray, limited_memory=False):
         """
         Initializes the MPC controller wrapper.
 
@@ -211,6 +212,8 @@ class MPCControllerWrapper:
         robot_mass = self.data.qM[0]
         mjx_model = mjx.put_model(self.model)
         self.config = config
+        self.centers = centers
+        self.radii = radii
         self.mpc_frequency = config.mpc_frequency
         self.shift = int(1 / (config.dt * config.mpc_frequency))
 
@@ -234,9 +237,9 @@ class MPCControllerWrapper:
         self.U0 = jnp.tile(config.u_ref, (config.N, 1))
         self.X0 = jnp.tile(self.initial_state, (config.N + 1, 1))
         self.V0 = jnp.zeros((config.N + 1, config.n))
-        self.w = jnp.zeros((config.N + 1, 2))
-        self.y = jnp.zeros((config.N + 1, 2))
-        self.rho = jnp.asarray(0.1, dtype=jnp.float32) 
+        self.w = jnp.zeros((config.N + 1, self.centers.shape[0]))
+        self.y = jnp.zeros((config.N + 1, self.centers.shape[0]))
+        self.rho = jnp.asarray(0.1, dtype=jnp.float32)
 
         # Define cost, hessian approximation, and dynamics functions for MPC.
         self.cost = partial(config.cost,config.n_joints, config.n_contact, config.N)
@@ -244,8 +247,9 @@ class MPCControllerWrapper:
         self.dynamics = partial(config.dynamics,
                                 self.model, mjx_model, self.contact_id, self.body_id,
                                 config.n_joints, config.dt)
+        self.constraints = partial(outside_circle_constraints, centers=self.centers, radii=self.radii)
 
-        work = partial(optimizers.mpc, self.cost, self.dynamics, hessian_approx, limited_memory)
+        work = partial(optimizers.mpc, self.cost, self.dynamics, hessian_approx, limited_memory, self.constraints)
 
         reference_generator = partial(mpc_utils.reference_generator,
             config.use_terrain_estimation ,config.N, config.dt, config.n_joints, config.n_contact, robot_mass,foot0 = config.p_legs0, q0 = config.q0)
@@ -298,7 +302,7 @@ class MPCControllerWrapper:
         self.collision = [0,0,0,0]
         self.collision_cycle = np.zeros(config.n_contact)
 
-    def run(self, qpos, qvel, input, contact):
+    def run(self, qpos, qvel, input, contact, centers, radii):
         """
         Runs one MPC update using the current state positions, velocities, input, and contact information.
 
