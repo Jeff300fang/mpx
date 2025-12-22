@@ -234,8 +234,8 @@ class MPCControllerWrapper:
         self.U0 = jnp.tile(config.u_ref, (config.N, 1))
         self.X0 = jnp.tile(self.initial_state, (config.N + 1, 1))
         self.V0 = jnp.zeros((config.N + 1, config.n))
-        self.w = jnp.zeros((config.N + 1, 4))
-        self.y = jnp.zeros((config.N + 1, 4))
+        self.w = jnp.zeros((config.N + 1, 2))
+        self.y = jnp.zeros((config.N + 1, 2))
         self.rho = jnp.asarray(0.1, dtype=jnp.float32) 
 
         # Define cost, hessian approximation, and dynamics functions for MPC.

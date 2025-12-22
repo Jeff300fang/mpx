@@ -2,6 +2,7 @@
 import jax.numpy as jnp
 import jax
 import mujoco
+from dataclasses import dataclass
 # Update JAX configuration
 jax.config.update("jax_compilation_cache_dir", "./jax_cache")
 jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
@@ -16,13 +17,14 @@ import mpx.utils.mpc_wrapper as mpc_wrapper
 import mpx.config.config_aliengo as config
 
 from timeit import default_timer as timer
+from mpx.utils.render_obstacles import render_static_vertical_cylinder
 # Set GPU device for JAX
 # gpu_device = jax.devices('gpu')[0]
 # jax.default_device(gpu_device)
- 
+
 # Define robot and scene parameters
 robot_name = "aliengo"   # "aliengo", "mini_cheetah", "go2", "hyqreal", ...
-scene_name = "random_boxes"
+scene_name = "flat"
 robot_feet_geom_names = dict(FR='FR',FL='FL', RR='RR' , RL='RL')
 robot_leg_joints = dict(FR=['FR_hip_joint', 'FR_thigh_joint', 'FR_calf_joint', ],
                         FL=['FL_hip_joint', 'FL_thigh_joint', 'FL_calf_joint', ],
@@ -32,7 +34,7 @@ mpc_frequency = config.mpc_frequency
 state_observables_names = tuple(QuadrupedEnv.ALL_OBS)  # return all available state observables
  
 # Initialize simulation environment
-sim_frequency = 200.0
+sim_frequency = 100.0
 env = QuadrupedEnv(robot=robot_name,
                    scene=scene_name,
                    sim_dt = 1/sim_frequency,  # Simulation time step [s]
@@ -65,6 +67,39 @@ dq = jnp.zeros(config.n_joints)
 mpc_time = 0
 mpc.robot_height = config.robot_height
 mpc.reset(env.mjData.qpos.copy(),env.mjData.qvel.copy())
+
+
+# --------- Define Constraints ---------
+@dataclass
+class CircleConstraint:
+    cx: float
+    cy: float
+    radius: float
+
+def render_obstacles(obstacles: list[CircleConstraint]):
+    for obstacle in obstacles:
+        cyl_xy = np.array([obstacle.cx, obstacle.cy])   # x, y
+        cyl_height = 1.0
+        cyl_radius = obstacle.radius
+        cyl_z_base = 0.0                # sits on ground
+        cyl_color = np.array([0.6, 0.6, 0.6, 1.0])
+
+        static_cyl_id = -1
+        static_cyl_id = render_static_vertical_cylinder(
+            env.viewer,
+            center_xy=cyl_xy,
+            height=cyl_height,
+            radius=(cyl_radius - 0.33), # Obstacles are inflated to capture size of quadruped
+            z_base=cyl_z_base,
+            color=cyl_color,
+            geom_id=static_cyl_id,
+        )
+
+obstacles = []
+obstacles.append(CircleConstraint(cx=2.0, cy=0.1, radius=0.43))
+obstacles.append(CircleConstraint(cx=4.0, cy=0.15, radius=0.43))
+# --------------------------------------
+
 while env.viewer.is_running():
  
     qpos = env.mjData.qpos.copy()
@@ -97,8 +132,7 @@ while env.viewer.is_running():
         tau, q, dq = mpc.run(qpos,qvel,input,contact)   
         stop = timer()
         print("Time taken for MPC: ", stop-start)   
-
-        stop = timer()
+        render_obstacles(obstacles)
         # for i in range(4):
         #     render_sphere(env.viewer,
         #                   collision_point[3*i:3*i+3],

@@ -20,7 +20,7 @@ import mpx.config.config_h1 as config
 
 model = mujoco.MjModel.from_xml_path(dir_path + '/../data/unitree_h1/mjx_scene_h1_walk.xml')
 data = mujoco.MjData(model)
-mpc_frequency = 50.0
+mpc_frequency = 250.0
 sim_frequency = 500.0
 model.opt.timestep = 1/sim_frequency
 

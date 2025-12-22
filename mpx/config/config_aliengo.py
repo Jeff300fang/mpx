@@ -14,7 +14,7 @@ body_name = ['FL_calf', 'FR_calf', 'RL_calf', 'RR_calf']
 # Time and stage parameters
 dt = 0.02  # Time step in seconds
 N = 25         # Number of stages
-mpc_frequency = 50  # Frequency of MPC updates in Hz
+mpc_frequency = 100  # Frequency of MPC updates in Hz
 
 # Timer values (make sure the values match your intended configuration)
 timer_t =  jnp.array([0.5, 0.0, 0.0, 0.5])  # Timer values for each leg galop jnp.array([0.25, 0.5, 0.75, 0.0]) crawl jnp.array([0.25, 0.75, 0.0, 0.5])

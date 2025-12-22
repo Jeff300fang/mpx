@@ -1,0 +1,16 @@
+W1221 20:47:15.157732  971640 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+W1221 20:47:15.159399  971512 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/gymnasium/spaces/box.py:236: UserWarning: [33mWARN: Box low's precision lowered by casting to float32, current low.dtype=float64[0m
+  gym.logger.warn(
+/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/gymnasium/spaces/box.py:306: UserWarning: [33mWARN: Box high's precision lowered by casting to float32, current high.dtype=float64[0m
+  gym.logger.warn(
+Failed to import warp: No module named 'warp'
+Failed to import mujoco_warp: No module named 'warp'
+Traceback (most recent call last):
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./mjx_quad.py", line 48, in <module>
+    mpc = mpc_wrapper.MPCControllerWrapper(config)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/utils/mpc_wrapper.py", line 208, in __init__
+    self.model = mujoco.MjModel.from_xml_path(config.model_path)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
