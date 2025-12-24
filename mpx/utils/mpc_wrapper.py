@@ -194,7 +194,7 @@ class BatchedMPCControllerWrapper:
         return data
 
 class MPCControllerWrapper:
-    def __init__(self, config, centers: jnp.ndarray, radii: jnp.ndarray, limited_memory=False):
+    def __init__(self, config, centers: jnp.ndarray, radii: jnp.ndarray, E: jnp.ndarray, limited_memory=False):
         """
         Initializes the MPC controller wrapper.
 
@@ -214,6 +214,7 @@ class MPCControllerWrapper:
         self.config = config
         self.centers = centers
         self.radii = radii
+        self.E = E
         self.mpc_frequency = config.mpc_frequency
         self.shift = int(1 / (config.dt * config.mpc_frequency))
 
@@ -249,7 +250,7 @@ class MPCControllerWrapper:
                                 config.n_joints, config.dt)
         self.constraints = partial(outside_circle_constraints, centers=self.centers, radii=self.radii)
 
-        work = partial(optimizers.mpc, self.cost, self.dynamics, hessian_approx, limited_memory, self.constraints)
+        work = partial(optimizers.mpc, self.cost, self.dynamics, hessian_approx, limited_memory, self.constraints, self.E)
 
         reference_generator = partial(mpc_utils.reference_generator,
             config.use_terrain_estimation ,config.N, config.dt, config.n_joints, config.n_contact, robot_mass,foot0 = config.p_legs0, q0 = config.q0)
@@ -302,7 +303,7 @@ class MPCControllerWrapper:
         self.collision = [0,0,0,0]
         self.collision_cycle = np.zeros(config.n_contact)
 
-    def run(self, qpos, qvel, input, contact, centers, radii):
+    def run(self, qpos, qvel, input, contact):
         """
         Runs one MPC update using the current state positions, velocities, input, and contact information.
 

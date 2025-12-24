@@ -86,15 +86,22 @@ def random_circles(key, K, radius=0.43, dtype=jnp.float32):
 key = jax.random.PRNGKey(1)
 centers, radii = random_circles(key, K=10, radius=0.43)
 
+# Predefined obstacles
 # centers = jnp.array([[2.0, 0.1],
 #                      [4.0, 0.15]], dtype=jnp.float32)
 
 # radii = jnp.array([0.43, 0.43], dtype=jnp.float32)
 # --------------------------------------
 
+# --------- Define Disturbance Matrices ---------
+
+E = jnp.zeros((config.N, config.n, config.n))
+
+# --------------------------------------
+
 
 # Define the MPC wrapper
-mpc = mpc_wrapper.MPCControllerWrapper(config, centers, radii)
+mpc = mpc_wrapper.MPCControllerWrapper(config, centers, radii, E)
 env.mjData.qpos = jnp.concatenate([config.p0, config.quat0,config.q0])
 env.render()
 ids = []
@@ -146,7 +153,7 @@ while env.viewer.is_running():
                 state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
                 counter += 1
         start = timer()
-        tau, q, dq = mpc.run(qpos,qvel,input,contact, centers, radii)   
+        tau, q, dq = mpc.run(qpos,qvel,input,contact)   
         stop = timer()
         print("Time taken for MPC: ", stop-start)   
         render_obstacles(centers, radii)
