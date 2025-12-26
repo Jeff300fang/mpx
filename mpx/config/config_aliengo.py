@@ -46,8 +46,9 @@ grf_as_state = True
 u_ref = jnp.zeros(m)  # Reference controls (concatenated torques)
 
 # Cost matrices (diagonal matrices created using jnp.diag)
-Qp    = jnp.diag(jnp.array([0, 0, 1e4]))  # Cost matrix for position
-Qrot  = jnp.diag(jnp.array([1000, 1000, 0]))  # Cost matrix for rotation
+Qp    = jnp.diag(jnp.array([1e4, 0, 1e5]))  # Cost matrix for position
+Qrot  = jnp.diag(jnp.array([1e3, 500, 1e4]))  # Cost matrix for rotation
+# Qrot  = jnp.diag(jnp.array([1e5, 1e3, 1e4]))  # Cost matrix for rotation
 Qq    = jnp.diag(jnp.ones(n_joints)) * 1e-1 # Cost matrix for joint angles
 Qdp   = jnp.diag(jnp.array([1, 1, 1])) * 5e3  # Cost matrix for position derivatives
 Qomega= jnp.diag(jnp.array([1, 1, 1])) * 1e2  # Cost matrix for angular velocity

@@ -194,7 +194,7 @@ class BatchedMPCControllerWrapper:
         return data
 
 class MPCControllerWrapper:
-    def __init__(self, config, centers: jnp.ndarray, radii: jnp.ndarray, E: jnp.ndarray, limited_memory=False):
+    def __init__(self, config, centers: jnp.ndarray, radii: jnp.ndarray, disturbance, limited_memory=False):
         """
         Initializes the MPC controller wrapper.
 
@@ -214,7 +214,6 @@ class MPCControllerWrapper:
         self.config = config
         self.centers = centers
         self.radii = radii
-        self.E = E
         self.mpc_frequency = config.mpc_frequency
         self.shift = int(1 / (config.dt * config.mpc_frequency))
 
@@ -249,8 +248,9 @@ class MPCControllerWrapper:
                                 self.model, mjx_model, self.contact_id, self.body_id,
                                 config.n_joints, config.dt)
         self.constraints = partial(outside_circle_constraints, centers=self.centers, radii=self.radii)
+        self.disturbance = disturbance
 
-        work = partial(optimizers.mpc, self.cost, self.dynamics, hessian_approx, limited_memory, self.constraints, self.E)
+        work = partial(optimizers.mpc, self.cost, self.dynamics, hessian_approx, limited_memory, self.constraints, self.disturbance)
 
         reference_generator = partial(mpc_utils.reference_generator,
             config.use_terrain_estimation ,config.N, config.dt, config.n_joints, config.n_contact, robot_mass,foot0 = config.p_legs0, q0 = config.q0)

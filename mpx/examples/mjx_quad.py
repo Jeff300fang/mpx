@@ -2,6 +2,8 @@
 import jax.numpy as jnp
 import jax
 import mujoco
+from functools import partial
+from jax import vmap
 # Update JAX configuration
 jax.config.update("jax_compilation_cache_dir", "./jax_cache")
 jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
@@ -87,21 +89,93 @@ key = jax.random.PRNGKey(1)
 centers, radii = random_circles(key, K=10, radius=0.43)
 
 # Predefined obstacles
-# centers = jnp.array([[2.0, 0.1],
-#                      [4.0, 0.15]], dtype=jnp.float32)
+# centers = jnp.array([[-2.0, 0.1],
+#                      [-4.0, 0.15]], dtype=jnp.float32)
 
 # radii = jnp.array([0.43, 0.43], dtype=jnp.float32)
 # --------------------------------------
 
 # --------- Define Disturbance Matrices ---------
 
-E = jnp.zeros((config.N, config.n, config.n))
 
+def smooth_interval(z, z_min, z_max, k=10.0):
+    # ~1 inside [z_min, z_max], ~0 outside, smooth everywhere
+    return 0.5 * (jnp.tanh(k * (z - z_min)) - jnp.tanh(k * (z - z_max)))
+
+def gate_2d(px, py,
+            x_min=-3.0, x_max=3.0,   # set wide if you only want y-strip
+            y_min=-3.0, y_max=3.0,
+            k=10.0):
+    return smooth_interval(px, x_min, x_max, k) * smooth_interval(py, y_min, y_max, k)
+
+
+def terrain_E_matrix(x):
+    """
+    Returns E(x) with shape (nx, nx).
+    Interpretable as componentwise disturbance scaling, i.e.
+      x_{k+1} = f(x_k,u_k) + E(x_k) w_k,  w_k in [-1,1]^{nx}.
+
+    Assumed state ordering:
+      [p(3), quat(4), v_lin(3), omega(3), q(12), dq(12), foot_pos(12), grf(12)]
+    """
+    n_joints = 12
+    n_contact = 4
+    nx = 13 + 2 * n_joints + 6 * n_contact  # 61
+
+    # --- terrain patch gate parameters ---
+    x_min, x_max = 0.5, 4.0
+    y_min, y_max = -0.5, 3.0
+    k = 10.0
+
+    # --- disturbance magnitudes (interpret as per-state bounds if w in [-1,1]) ---
+    alpha_vz      = 0.5    # affects base v_z
+    alpha_omega   = 0.3    # affects base omega_x, omega_y
+    alpha_foot_z  = 0.03   # affects each foot z position
+    alpha_grf_z   = 50.0   # affects each foot GRF z
+
+    # indices under the assumed layout
+    px_idx, py_idx = 0, 1
+    v_lin_start = 3 + 4            # 7
+    vz_idx = v_lin_start + 2       # 9
+    omega_start = v_lin_start + 3  # 10
+    omega_x_idx = omega_start + 0  # 10
+    omega_y_idx = omega_start + 1  # 11
+
+    foot_pos_start = 13 + 2 * n_joints          # 37
+    grf_start      = foot_pos_start + 3*n_contact  # 49
+
+    # smooth activation
+    s = gate_2d(x[px_idx], x[py_idx],
+                x_min=x_min, x_max=x_max,
+                y_min=y_min, y_max=y_max,
+                k=k)
+
+    # build diagonal disturbance scaling
+    diag = jnp.zeros((nx,))
+
+    # base disturbances
+    diag = diag.at[vz_idx].set(s * alpha_vz)
+    diag = diag.at[omega_x_idx].set(s * alpha_omega)
+    diag = diag.at[omega_y_idx].set(s * alpha_omega)
+
+    # per-foot z position disturbances
+    foot_z_indices = foot_pos_start + 3*jnp.arange(n_contact) + 2
+    diag = diag.at[foot_z_indices].set(s * alpha_foot_z)
+
+    # per-foot GRFz disturbances
+    grf_z_indices = grf_start + 3*jnp.arange(n_contact) + 2
+    diag = diag.at[grf_z_indices].set(s * alpha_grf_z)
+
+    # E is diagonal; sparse + stable for linearization/robust bounds
+    return jnp.diag(diag)
+
+def disturbance(X):
+    return vmap(terrain_E_matrix)(X)
 # --------------------------------------
 
 
 # Define the MPC wrapper
-mpc = mpc_wrapper.MPCControllerWrapper(config, centers, radii, E)
+mpc = mpc_wrapper.MPCControllerWrapper(config, centers, radii, disturbance)
 env.mjData.qpos = jnp.concatenate([config.p0, config.quat0,config.q0])
 env.render()
 ids = []
@@ -132,9 +206,10 @@ while env.viewer.is_running():
     
  
         ref_base_lin_vel = env._ref_base_lin_vel_H
-        ref_base_ang_vel =  np.array([0., 0., env._ref_base_ang_yaw_dot])
- 
-        
+        # ref_base_ang_vel =  np.array([0., 0., env._ref_base_ang_yaw_dot])
+        ref_base_lin_vel = np.array([0.2, 0., 0.])
+        ref_base_ang_vel =  np.array([0., 0., 0.])
+
         input = np.array([ref_base_lin_vel[0],ref_base_lin_vel[1],ref_base_lin_vel[2],
                            ref_base_ang_vel[0],ref_base_ang_vel[1],ref_base_ang_vel[2],
                            config.robot_height])
