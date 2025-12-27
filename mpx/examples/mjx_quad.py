@@ -19,6 +19,7 @@ import mpx.config.config_aliengo as config
 
 from timeit import default_timer as timer
 from mpx.utils.render_obstacles import render_static_vertical_cylinder
+from mpx.utils.mpc_utils import outside_circle_constraints
 # Set GPU device for JAX
 # gpu_device = jax.devices('gpu')[0]
 # jax.default_device(gpu_device)
@@ -175,7 +176,8 @@ def disturbance(X):
 
 
 # Define the MPC wrapper
-mpc = mpc_wrapper.MPCControllerWrapper(config, centers, radii, disturbance)
+obstacle_cosntraints = partial(outside_circle_constraints, centers=centers, radii=radii)
+mpc = mpc_wrapper.MPCControllerWrapper(config, obstacle_cosntraints, disturbance)
 env.mjData.qpos = jnp.concatenate([config.p0, config.quat0,config.q0])
 env.render()
 ids = []

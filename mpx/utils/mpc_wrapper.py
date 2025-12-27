@@ -11,7 +11,6 @@ import mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers as optimizers
 from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMWarmStart
 import numpy as np
 from mujoco.mjx._src.dataclasses import PyTreeNode 
-from mpx.utils.mpc_utils import outside_circle_constraints
 # Try to import torch for dlpack conversion, but continue if torch is not available
 from timeit import default_timer as timer
 # MJX style class to store all the data needed for the MPC controller   
@@ -194,7 +193,7 @@ class BatchedMPCControllerWrapper:
         return data
 
 class MPCControllerWrapper:
-    def __init__(self, config, centers: jnp.ndarray, radii: jnp.ndarray, disturbance, limited_memory=False):
+    def __init__(self, config, constraints, num_constraints, disturbance, limited_memory=False):
         """
         Initializes the MPC controller wrapper.
 
@@ -212,8 +211,6 @@ class MPCControllerWrapper:
         robot_mass = self.data.qM[0]
         mjx_model = mjx.put_model(self.model)
         self.config = config
-        self.centers = centers
-        self.radii = radii
         self.mpc_frequency = config.mpc_frequency
         self.shift = int(1 / (config.dt * config.mpc_frequency))
 
@@ -237,8 +234,8 @@ class MPCControllerWrapper:
         self.U0 = jnp.tile(config.u_ref, (config.N, 1))
         self.X0 = jnp.tile(self.initial_state, (config.N + 1, 1))
         self.V0 = jnp.zeros((config.N + 1, config.n))
-        self.w = jnp.zeros((config.N + 1, self.centers.shape[0]))
-        self.y = jnp.zeros((config.N + 1, self.centers.shape[0]))
+        self.w = jnp.zeros((config.N + 1, num_constraints))
+        self.y = jnp.zeros((config.N + 1, num_constraints))
         self.rho = jnp.asarray(0.1, dtype=jnp.float32)
 
         # Define cost, hessian approximation, and dynamics functions for MPC.
@@ -247,7 +244,7 @@ class MPCControllerWrapper:
         self.dynamics = partial(config.dynamics,
                                 self.model, mjx_model, self.contact_id, self.body_id,
                                 config.n_joints, config.dt)
-        self.constraints = partial(outside_circle_constraints, centers=self.centers, radii=self.radii)
+        self.constraints = constraints
         self.disturbance = disturbance
 
         work = partial(optimizers.mpc, self.cost, self.dynamics, hessian_approx, limited_memory, self.constraints, self.disturbance)
