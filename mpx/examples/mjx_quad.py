@@ -87,7 +87,8 @@ def random_circles(key, K, radius=0.43, dtype=jnp.float32):
 
 # Example usage
 key = jax.random.PRNGKey(1)
-centers, radii = random_circles(key, K=10, radius=0.43)
+num_constraints = 10
+centers, radii = random_circles(key, K=num_constraints, radius=0.43)
 
 # Predefined obstacles
 # centers = jnp.array([[-2.0, 0.1],
@@ -177,7 +178,7 @@ def disturbance(X):
 
 # Define the MPC wrapper
 obstacle_cosntraints = partial(outside_circle_constraints, centers=centers, radii=radii)
-mpc = mpc_wrapper.MPCControllerWrapper(config, obstacle_cosntraints, disturbance)
+mpc = mpc_wrapper.MPCControllerWrapper(config, obstacle_cosntraints, num_constraints, disturbance)
 env.mjData.qpos = jnp.concatenate([config.p0, config.quat0,config.q0])
 env.render()
 ids = []

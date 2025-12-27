@@ -188,12 +188,12 @@ class MPCConfig:
 # -----------------------------
 def main():
     # Problem setup
-    nlinks = 50
+    nlinks = 25
     n = 2 * nlinks
     nu = nlinks
 
-    N = 100
-    dt = 0.02
+    N = 500
+    dt = 0.5 / N
 
     # Weights: (q, qd, u)
     W = jnp.array([50.0, 5.0, 0.1], dtype=jnp.float32)
@@ -241,12 +241,15 @@ def main():
     )
 
     # Closed-loop rollout
-    key = jax.random.PRNGKey(0)
-    q0  = 0.1 * jax.random.normal(key, (nlinks,), dtype=jnp.float32)
+    i = jnp.arange(nlinks, dtype=jnp.float32)
+    mode = jnp.sin(jnp.pi * (i + 1) / (nlinks + 1))   # smooth first bending mode
+
+    q0  = 0.2 * mode        # 0.10–0.20 rad is a good benchmarking range
     qd0 = jnp.zeros((nlinks,), dtype=jnp.float32)
+
     x = jnp.concatenate([q0, qd0], axis=0)
 
-    T_steps = 20
+    T_steps = 100
     xs = []
     us = []
 
