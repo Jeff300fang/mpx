@@ -1,29 +1,37 @@
 """
 nlink_pendulum_mpc_experiment.py
 
-End-to-end experiment: use your mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers.mpc
-to control an n-link planar pendulum (stacked state x = [q; qd]) with torque box constraints.
+End-to-end experiment: use your mpx.utils.generic_mpc_wrapper.GenericMPCControllerWrapper
+to control an n-link planar pendulum (state x = [q; qd]) with torque box constraints.
 
-Assumptions (matches the mpc() you pasted):
+This version targets an UPRIGHT equilibrium and incorporates angle wrapping in the cost.
+
+Assumptions (matches your mpc() usage):
   - dynamics(x, u, t, *, parameter=...) returns x_{t+1} (discrete-time)
   - cost(W, reference, x, u, t) returns scalar stage cost
   - constraints(x, u, t) returns g(x,u,t) with g <= 0 (inequality)
   - disturbance(X_prefix) returns E used by get_controller(..., E, eta)
-    We provide a conservative "zeros" shape (T, n, nc). If your get_controller expects a
-    different E shape, adjust make_zero_disturbance() accordingly.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import partial
-from typing import Tuple, Callable, Any
+from typing import Any, Callable
 
+import time
 import jax
 import jax.numpy as jnp
-import time
 
 from mpx.utils.generic_mpc_wrapper import GenericMPCControllerWrapper
+
+
+# -----------------------------
+# Angle wrapping
+# -----------------------------
+def wrap_to_pi(a: jnp.ndarray) -> jnp.ndarray:
+    """Wrap angles elementwise to (-pi, pi]."""
+    return (a + jnp.pi) % (2.0 * jnp.pi) - jnp.pi
+
 
 # -----------------------------
 # N-link planar pendulum dynamics (Lagrangian via AD)
@@ -32,15 +40,14 @@ from mpx.utils.generic_mpc_wrapper import GenericMPCControllerWrapper
 @jax.tree_util.register_pytree_node_class
 @dataclass
 class NLinkParams:
-    l:  jnp.ndarray
-    m:  jnp.ndarray
-    I:  jnp.ndarray
+    l: jnp.ndarray
+    m: jnp.ndarray
+    I: jnp.ndarray
     lc: jnp.ndarray
-    g:  float = 9.81
-    b:  float = 0.0
+    g: float = 9.81
+    b: float = 0.0
 
     def tree_flatten(self):
-        # children must be arrays / pytrees of arrays
         children = (self.l, self.m, self.I, self.lc, jnp.asarray(self.g), jnp.asarray(self.b))
         aux_data = None
         return children, aux_data
@@ -48,7 +55,6 @@ class NLinkParams:
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         l, m, I, lc, g, b = children
-        # convert scalar arrays back to Python floats if you want, but not necessary
         return cls(l=l, m=m, I=I, lc=lc, g=g, b=b)
 
 
@@ -60,8 +66,8 @@ def _com_positions(q: jnp.ndarray, p: NLinkParams) -> jnp.ndarray:
     dx_full = p.l * ex
     dy_full = p.l * ey
 
-    xj = jnp.concatenate([jnp.zeros((1,)), jnp.cumsum(dx_full)])
-    yj = jnp.concatenate([jnp.zeros((1,)), jnp.cumsum(dy_full)])
+    xj = jnp.concatenate([jnp.zeros((1,), dtype=q.dtype), jnp.cumsum(dx_full)])
+    yj = jnp.concatenate([jnp.zeros((1,), dtype=q.dtype), jnp.cumsum(dy_full)])
 
     xi = xj[:-1] + p.lc * ex
     yi = yj[:-1] + p.lc * ey
@@ -70,7 +76,7 @@ def _com_positions(q: jnp.ndarray, p: NLinkParams) -> jnp.ndarray:
 
 def _kinetic_energy(q: jnp.ndarray, qd: jnp.ndarray, p: NLinkParams) -> jnp.ndarray:
     Jr = jax.jacobian(lambda qq: _com_positions(qq, p))(q)  # (n,2,n)
-    v = jnp.einsum("i j k, k -> i j", Jr, qd)              # (n,2)
+    v = jnp.einsum("i j k, k -> i j", Jr, qd)               # (n,2)
     omega = jnp.cumsum(qd)                                  # (n,)
 
     T_trans = 0.5 * jnp.sum(p.m * jnp.sum(v * v, axis=-1))
@@ -115,9 +121,8 @@ def pendulum_step(x: jnp.ndarray, u: jnp.ndarray, dt: float, p: NLinkParams) -> 
     xdot = jnp.concatenate([qd, qdd], axis=0)
     return x + dt * xdot
 
-
-def dynamics(x: jnp.ndarray, u: jnp.ndarray, t: jnp.ndarray, *, parameter) -> jnp.ndarray:
-    """Discrete-time dynamics required by your model_evaluator_helper residual."""
+def dynamics(x: jnp.ndarray, u: jnp.ndarray, t: jnp.ndarray, *, parameter: Any) -> jnp.ndarray:
+    """Discrete-time dynamics required by your model evaluator."""
     dt, p = parameter
     return pendulum_step(x, u, dt, p)
 
@@ -125,11 +130,9 @@ def dynamics(x: jnp.ndarray, u: jnp.ndarray, t: jnp.ndarray, *, parameter) -> jn
 # -----------------------------
 # Cost and Constraints matching your mpc() expectations
 # -----------------------------
-def cost(W: jnp.ndarray, reference: jnp.ndarray, x: jnp.ndarray, u: jnp.ndarray, t: jnp.ndarray) -> jnp.ndarray:
-    """
-    Stage cost: quadratic tracking to reference[t].
-    W = [wq, wqd, wu]
-    """
+def cost(W: jnp.ndarray, reference: jnp.ndarray, x: jnp.ndarray, u: jnp.ndarray, t: jnp.ndarray) -> jnp.ndarray: 
+    """ Stage cost: quadratic tracking to reference[t], WITH angle wrapping on q.
+    W = [wq, wqd, wu] """
     wq, wqd, wu = W
     n = u.shape[0]
     xref = reference[t]
@@ -137,11 +140,10 @@ def cost(W: jnp.ndarray, reference: jnp.ndarray, x: jnp.ndarray, u: jnp.ndarray,
     qd = x[n:]
     q_ref = xref[:n]
     qd_ref = xref[n:]
-    return (
-        wq * jnp.sum((q - q_ref) ** 2)
-        + wqd * jnp.sum((qd - qd_ref) ** 2)
-        + wu * jnp.sum(u**2)
-    )
+    dq = wrap_to_pi(q - q_ref)
+    dqd = qd - qd_ref 
+    return ( wq * jnp.sum(dq * dq) + wqd * jnp.sum(dqd * dqd) + wu * jnp.sum(u * u) )
+
 
 
 def make_torque_box_constraints(u_min: jnp.ndarray, u_max: jnp.ndarray):
@@ -162,14 +164,62 @@ def make_torque_box_constraints(u_min: jnp.ndarray, u_max: jnp.ndarray):
 def make_zero_disturbance(n: int, nc: int):
     """
     Conservative default: returns E with shape (T, n, nc).
-    If fast_sls_utils.get_controller expects a different shape, change this function.
+    If your get_controller expects a different E shape, change this function.
     """
     def disturbance(X_prefix: jnp.ndarray) -> jnp.ndarray:
         # X_prefix: (T, n)
         T = X_prefix.shape[0]
         return jnp.zeros((T, n, nc), dtype=X_prefix.dtype)
+
     return disturbance
 
+
+def make_end_effector_height_constraint(y_min, p: NLinkParams):
+    def constraints(x, u, t):
+        n = u.shape[0]
+        q = x[:n]
+        pos = _com_positions(q, p)  # or compute EE directly
+        y_ee = pos[-1, 1]
+        return jnp.array([y_min - y_ee])
+    return constraints
+
+def make_random_periodic_pushes(
+    nu: int,
+    dt: float,
+    period_sec: float = 0.6,         # how often a push window starts
+    push_duration_sec: float = 0.08, # how long the push lasts
+    amp_max: float = 2.0,            # max torque magnitude per joint
+    per_joint: bool = True,          # True: each joint gets its own random push
+) -> Callable[[int, jax.Array], jnp.ndarray]:
+    period_steps = max(1, int(period_sec / dt))
+    dur_steps = max(1, int(push_duration_sec / dt))
+
+    def tau_disturb(k: int, key: jax.Array) -> jnp.ndarray:
+        phase = k % period_steps
+        on = jnp.where(phase < dur_steps, 1.0, 0.0) # 1.0 during push window else 0.0
+
+        key, sub = jax.random.split(key)
+        if per_joint:
+            push = amp_max * (2.0 * jax.random.uniform(sub, (nu,), dtype=jnp.float32) - 1.0)
+        else:
+            s = amp_max * (2.0 * jax.random.uniform(sub, (), dtype=jnp.float32) - 1.0)
+            push = jnp.ones((nu,), dtype=jnp.float32) * s
+
+        return on * push
+
+    return tau_disturb
+
+def make_first_joint_angle_constraint(q0_min: float, q0_max: float):
+    """
+    Enforce: q0_min <= q[0] <= q0_max
+    """
+    def constraints(x: jnp.ndarray, u: jnp.ndarray, t: jnp.ndarray) -> jnp.ndarray:
+        q0 = x[0]
+        return jnp.array([
+            q0 - q0_max,   # q0 <= q0_max
+            q0_min - q0,   # q0 >= q0_min
+        ])
+    return constraints
 
 # -----------------------------
 # Config
@@ -188,11 +238,11 @@ class MPCConfig:
 # -----------------------------
 def main():
     # Problem setup
-    nlinks = 30
+    nlinks = 10
     n = 2 * nlinks
     nu = nlinks
 
-    N = 400
+    N = 3000
     dt = 0.5 / N
 
     # Weights: (q, qd, u)
@@ -217,13 +267,23 @@ def main():
     )
     parameter = (dt, p)
 
-    # Reference: regulate to zero state
-    reference = jnp.zeros((N + 1, n), dtype=jnp.float32)
+    # -----------------------------
+    # Upright reference
+    # -----------------------------
+    # "Upright" here means all links point along +y, i.e. absolute angles theta_i = +pi/2.
+    # With relative angles q, a simple equilibrium is:
+    #   q_ref = [pi/2, 0, 0, ..., 0], qd_ref = 0.
+    q_ref = jnp.zeros((nlinks,), dtype=jnp.float32).at[0].set(jnp.pi / 2)
+    qd_ref = jnp.zeros((nlinks,), dtype=jnp.float32)
+    x_ref = jnp.concatenate([q_ref, qd_ref], axis=0)
+
+    # Constant reference over the horizon
+    reference = jnp.tile(x_ref[None, :], (N + 1, 1))
 
     # Torque bounds
-    u_max = 5.0 * jnp.ones((nu,), dtype=jnp.float32)
+    u_max = (2.5) * jnp.ones((nu,), dtype=jnp.float32)
     u_min = -u_max
-    constraints = make_torque_box_constraints(u_min, u_max)
+    constraints_torque = make_torque_box_constraints(u_min, u_max)
     nc = 2 * nu
 
     disturbance = make_zero_disturbance(n=n, nc=nc)
@@ -232,7 +292,7 @@ def main():
     controller = GenericMPCControllerWrapper(
         config=cfg,
         dynamics=dynamics,
-        constraints=constraints,
+        constraints=constraints_torque,
         cost=cost,
         num_constraints=nc,
         disturbance=disturbance,
@@ -240,30 +300,60 @@ def main():
         shift=1,
     )
 
-    # Closed-loop rollout
+    # -----------------------------
+    # Initial condition: near upright (local balancing)
+    # -----------------------------
     i = jnp.arange(nlinks, dtype=jnp.float32)
-    mode = jnp.sin(jnp.pi * (i + 1) / (nlinks + 1))   # smooth first bending mode
+    mode = jnp.sin(jnp.pi * (i + 1) / (nlinks + 1))  # smooth bending mode
 
-    q0  = 0.2 * mode        # 0.10–0.20 rad is a good benchmarking range
+    q0 = q_ref + 0.01 * mode   # small perturbation around upright
+    q0 = q_ref   # small perturbation around upright
     qd0 = jnp.zeros((nlinks,), dtype=jnp.float32)
-
     x = jnp.concatenate([q0, qd0], axis=0)
+    jax.debug.print("{}", x)
 
-    T_steps = 100
+    # Closed-loop rollout
+    T_steps = 1/dt
+    # T_steps = 100 
     xs = []
     us = []
 
-    total_time = 0
-    min_time = jnp.inf
+    total_time = 0.0
+    min_time = float("inf")
+    max_amp = 3.77 + 9.48e-3 * N - 1.39e-6 * N * N
+    print("MAX:", max_amp)
     # Compilation warmup
-    u0, X_pred, U_pred, V_pred = controller.run(x0=x, reference=reference, parameter=parameter)
-    for k in range(T_steps):
+    _ = controller.run(x0=x, reference=reference, parameter=parameter)
+
+    tau_disturb = make_random_periodic_pushes(
+        nu=nu,
+        dt=dt,
+        period_sec=0.1,
+        push_duration_sec=0.05,
+        amp_max=max_amp,
+        per_joint=True,
+    )
+    key = jax.random.PRNGKey(0)
+    near_constraint = 0
+    alpha = 0.95
+    for k in range(min(2000, int(T_steps))):
+        print(f"sim iteration {k}")
         start = time.perf_counter()
         u0, X_pred, U_pred, V_pred = controller.run(x0=x, reference=reference, parameter=parameter)
+        u0.block_until_ready()
         end = time.perf_counter()
-        total_time = total_time + (end - start)
-        min_time = min(total_time, min_time)
-        x = pendulum_step(x, u0, dt, p)
+
+        dt_run = end - start
+        total_time += dt_run
+        min_time = min(min_time, dt_run)
+
+        key, sub = jax.random.split(key)
+        tau_d = tau_disturb(k, sub)
+        x = pendulum_step(x, u0 + tau_d, dt, p)
+        jax.debug.print(" u = {}", u0)
+        jax.debug.print("x = {}", x)
+        if jnp.any(jnp.abs(u0) >= alpha * u_max):
+            near_constraint += 1
         xs.append(x)
         us.append(u0)
 
@@ -273,9 +363,12 @@ def main():
     print("Final state x =", xs[-1])
     print("Final input u =", us[-1])
     print("Mean |u| =", jnp.mean(jnp.linalg.norm(us, axis=1)))
+    print("Max |u| =", jnp.max(jnp.abs(us)))
     print("Mean |q| =", jnp.mean(jnp.linalg.norm(xs[:, :nlinks], axis=1)))
-    print("Total mean ms run:", total_time / T_steps * 1000 )
-    print("Min_time:", min_time)
+    print("Mean run time (ms):", (total_time / T_steps) * 1000.0)
+    print("Min run time (ms):", min_time * 1000.0)
+    print("Near constraint: ", near_constraint)
+    print("Percentage:", near_constraint / T_steps)
 
 
 if __name__ == "__main__":

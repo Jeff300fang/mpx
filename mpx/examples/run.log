@@ -1,16 +1,121 @@
-W1221 20:47:15.157732  971640 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
-W1221 20:47:15.159399  971512 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
-/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/gymnasium/spaces/box.py:236: UserWarning: [33mWARN: Box low's precision lowered by casting to float32, current low.dtype=float64[0m
-  gym.logger.warn(
-/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/gymnasium/spaces/box.py:306: UserWarning: [33mWARN: Box high's precision lowered by casting to float32, current high.dtype=float64[0m
-  gym.logger.warn(
-Failed to import warp: No module named 'warp'
-Failed to import mujoco_warp: No module named 'warp'
+W1227 22:41:20.996833 3373108 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+W1227 22:41:20.998643 3373006 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+ADMM done: Total Iterations=86 converged=True rho=1.250e+01 rp=3.609e+00 (<= 6.493e+00) rd=6.008e+00 (<= 8.605e+00) Rho0 1.000e-01
+ADMM done: Total Iterations=37 converged=True rho=5.000e+01 rp=6.339e+00 (<= 6.590e+00) rd=2.919e+01 (<= 4.101e+01) Rho0 1.125e+01
+ADMM done: Total Iterations=83 converged=True rho=1.250e+01 rp=1.191e+00 (<= 8.096e+00) rd=2.190e+00 (<= 4.109e+00) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=1.107e+03 (<= 2.240e+01) rd=6.266e-05 (<= 2.070e+05) Rho0 4.500e+01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=1.374e+00 (<= 6.027e+00) rd=0.000e+00 (<= 2.832e+00) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=1.633e+02 (<= 1.015e+01) rd=1.019e-04 (<= 3.055e+04) Rho0 1.125e+01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=3.951e-01 (<= 4.519e+00) rd=2.737e-01 (<= 2.830e+00) Rho0 1.000e-01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 3.624e+00) rd=7.099e-02 (<= 2.829e+00) Rho0 1.000e-01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 3.475e+00) rd=0.000e+00 (<= 2.829e+00) Rho0 1.000e-01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 3.230e+00) rd=0.000e+00 (<= 2.829e+00) Rho0 1.000e-01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 3.074e+00) rd=0.000e+00 (<= 2.829e+00) Rho0 1.000e-01
+ADMM done: Total Iterations=1 converged=True rho=1.000e-01 rp=0.000e+00 (<= 3.044e+00) rd=2.232e+00 (<= 2.829e+00) Rho0 1.000e-01
+ADMM done: Total Iterations=1 converged=True rho=1.000e-01 rp=0.000e+00 (<= 2.972e+00) rd=1.585e+00 (<= 2.829e+00) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=1.747e+02 (<= 5.435e+00) rd=0.000e+00 (<= 2.612e+04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=1.476e+02 (<= 5.043e+00) rd=0.000e+00 (<= 2.207e+04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=1.144e+03 (<= 1.663e+01) rd=3.770e-05 (<= 1.711e+05) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=3.072e+05 (<= 4.345e+03) rd=4.046e-04 (<= 5.744e+07) Rho0 4.500e+01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=9.188e+03 (<= 1.166e+02) rd=9.611e-05 (<= 1.374e+06) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=2.016e+06 (<= 2.850e+04) rd=8.039e-04 (<= 3.770e+08) Rho0 4.500e+01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=7.619e+04 (<= 9.505e+02) rd=1.395e-04 (<= 1.139e+07) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=1.620e+07 (<= 2.289e+05) rd=1.184e-02 (<= 3.029e+09) Rho0 4.500e+01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=4.203e+13 (<= 5.944e+11) rd=4.525e+03 (<= 6.283e+15) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=5.000e+01 rp=1.343e+08 (<= 1.899e+06) rd=2.124e-02 (<= 2.512e+10) Rho0 4.500e+01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 4.500e+01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+E1227 22:42:45.763484 3373006 pjrt_stream_executor_client.cc:2085] Execution of replica 0 failed: INTERNAL: CpuCallback error calling callback: Traceback (most recent call last):
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./n_link_pendulum_admm_experiment.py", line 416, in <module>
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./n_link_pendulum_admm_experiment.py", line 380, in main
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./n_link_pendulum_admm_experiment.py", line 264, in rollout_with_disturbance
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/utils/generic_mpc_wrapper.py", line 82, in run
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/traceback_util.py", line 195, in reraise_with_filtered_traceback
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 264, in cache_miss
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 146, in _python_pjit_helper
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 1642, in _pjit_call_impl_python
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/profiler.py", line 359, in wrapper
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py", line 1371, in __call__
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/callback.py", line 783, in _wrapped_callback
+KeyboardInterrupt: 
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 nan
 Traceback (most recent call last):
-  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./mjx_quad.py", line 48, in <module>
-    mpc = mpc_wrapper.MPCControllerWrapper(config)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/utils/mpc_wrapper.py", line 208, in __init__
-    self.model = mujoco.MjModel.from_xml_path(config.model_path)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-KeyboardInterrupt
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./n_link_pendulum_admm_experiment.py", line 416, in <module>
+    main()
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./n_link_pendulum_admm_experiment.py", line 380, in main
+    near_rate, mean_ms, min_ms = rollout_with_disturbance(
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./n_link_pendulum_admm_experiment.py", line 264, in rollout_with_disturbance
+    u0, X_pred, U_pred, V_pred = controller.run(x0=x, reference=reference, parameter=parameter)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/utils/generic_mpc_wrapper.py", line 82, in run
+    X, U, V, w, y, rho = self._solve(
+                         ^^^^^^^^^^^^
+jax.errors.JaxRuntimeError: INTERNAL: CpuCallback error calling callback: Traceback (most recent call last):
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./n_link_pendulum_admm_experiment.py", line 416, in <module>
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./n_link_pendulum_admm_experiment.py", line 380, in main
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./n_link_pendulum_admm_experiment.py", line 264, in rollout_with_disturbance
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/utils/generic_mpc_wrapper.py", line 82, in run
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/traceback_util.py", line 195, in reraise_with_filtered_traceback
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 264, in cache_miss
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 146, in _python_pjit_helper
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 1642, in _pjit_call_impl_python
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/profiler.py", line 359, in wrapper
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py", line 1371, in __call__
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/callback.py", line 783, in _wrapped_callback
+KeyboardInterrupt: 
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
