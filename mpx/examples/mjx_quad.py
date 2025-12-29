@@ -4,6 +4,7 @@ import jax
 import mujoco
 from functools import partial
 from jax import vmap
+from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMConfig
 # Update JAX configuration
 jax.config.update("jax_compilation_cache_dir", "./jax_cache")
 jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
@@ -87,14 +88,14 @@ def random_circles(key, K, radius=0.43, dtype=jnp.float32):
 
 # Example usage
 key = jax.random.PRNGKey(1)
-num_constraints = 10
-centers, radii = random_circles(key, K=num_constraints, radius=0.43)
+# num_constraints = 10
+# centers, radii = random_circles(key, K=num_constraints, radius=0.43)
 
 # Predefined obstacles
-# centers = jnp.array([[-2.0, 0.1],
-#                      [-4.0, 0.15]], dtype=jnp.float32)
+num_constraints = 1
+centers = jnp.array([[2.0, 0.1]], dtype=jnp.float32)
 
-# radii = jnp.array([0.43, 0.43], dtype=jnp.float32)
+radii = jnp.array([0.43], dtype=jnp.float32)
 # --------------------------------------
 
 # --------- Define Disturbance Matrices ---------
@@ -178,7 +179,13 @@ def disturbance(X):
 
 # Define the MPC wrapper
 obstacle_cosntraints = partial(outside_circle_constraints, centers=centers, radii=radii)
-mpc = mpc_wrapper.MPCControllerWrapper(config, obstacle_cosntraints, num_constraints, disturbance)
+cfg = ADMMConfig(
+        eps_abs=1e-2,
+        eps_rel=1e-2,
+        condense_block_size=5,
+        rho_max=1e5
+    )
+mpc = mpc_wrapper.MPCControllerWrapper(cfg, config, obstacle_cosntraints, num_constraints, disturbance)
 env.mjData.qpos = jnp.concatenate([config.p0, config.quat0,config.q0])
 env.render()
 ids = []

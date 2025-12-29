@@ -22,6 +22,7 @@ import time
 import jax
 import jax.numpy as jnp
 
+from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMConfig
 from mpx.utils.generic_mpc_wrapper import GenericMPCControllerWrapper
 
 
@@ -242,8 +243,8 @@ def main():
     n = 2 * nlinks
     nu = nlinks
 
-    N = 3000
-    dt = 0.5 / N
+    N = 1000
+    dt = min(0.5 / N, 0.005)
 
     # Weights: (q, qd, u)
     W = jnp.array([50.0, 5.0, 0.1], dtype=jnp.float32)
@@ -254,6 +255,14 @@ def main():
         N=N,
         W=W,
         u_ref=jnp.zeros((nu,), dtype=jnp.float32),
+    )
+
+    admm_cfg = ADMMConfig(
+        eps_abs=1e-2,
+        eps_rel=1e-2,
+        condense_block_size=5,
+        rho_max=1e10,
+        max_iterations=400
     )
 
     # Pendulum parameters
@@ -281,7 +290,7 @@ def main():
     reference = jnp.tile(x_ref[None, :], (N + 1, 1))
 
     # Torque bounds
-    u_max = (2.5) * jnp.ones((nu,), dtype=jnp.float32)
+    u_max = (3.0) * jnp.ones((nu,), dtype=jnp.float32)
     u_min = -u_max
     constraints_torque = make_torque_box_constraints(u_min, u_max)
     nc = 2 * nu
@@ -290,6 +299,7 @@ def main():
 
     # Controller
     controller = GenericMPCControllerWrapper(
+        admm_cfg,
         config=cfg,
         dynamics=dynamics,
         constraints=constraints_torque,
@@ -303,24 +313,21 @@ def main():
     # -----------------------------
     # Initial condition: near upright (local balancing)
     # -----------------------------
-    i = jnp.arange(nlinks, dtype=jnp.float32)
-    mode = jnp.sin(jnp.pi * (i + 1) / (nlinks + 1))  # smooth bending mode
-
-    q0 = q_ref + 0.01 * mode   # small perturbation around upright
     q0 = q_ref   # small perturbation around upright
     qd0 = jnp.zeros((nlinks,), dtype=jnp.float32)
     x = jnp.concatenate([q0, qd0], axis=0)
-    jax.debug.print("{}", x)
+    # jax.debug.print("{}", x)
 
     # Closed-loop rollout
-    T_steps = 1/dt
+    T_steps = min(int(1/dt), 200)
     # T_steps = 100 
     xs = []
     us = []
 
     total_time = 0.0
     min_time = float("inf")
-    max_amp = 3.77 + 9.48e-3 * N - 1.39e-6 * N * N
+    max_amp = 0.525 * N ** 0.488
+    # max_amp = 5
     print("MAX:", max_amp)
     # Compilation warmup
     _ = controller.run(x0=x, reference=reference, parameter=parameter)
@@ -328,15 +335,15 @@ def main():
     tau_disturb = make_random_periodic_pushes(
         nu=nu,
         dt=dt,
-        period_sec=0.1,
-        push_duration_sec=0.05,
+        period_sec=0.005,
+        push_duration_sec=0.1,
         amp_max=max_amp,
         per_joint=True,
     )
     key = jax.random.PRNGKey(0)
     near_constraint = 0
-    alpha = 0.95
-    for k in range(min(2000, int(T_steps))):
+    alpha = 0.9
+    for k in range(T_steps):
         print(f"sim iteration {k}")
         start = time.perf_counter()
         u0, X_pred, U_pred, V_pred = controller.run(x0=x, reference=reference, parameter=parameter)
@@ -349,9 +356,12 @@ def main():
 
         key, sub = jax.random.split(key)
         tau_d = tau_disturb(k, sub)
-        x = pendulum_step(x, u0 + tau_d, dt, p)
-        jax.debug.print(" u = {}", u0)
-        jax.debug.print("x = {}", x)
+        if k > 10:
+            x = pendulum_step(x, u0 + tau_d, dt, p)
+        else:
+            x = pendulum_step(x, u0, dt, p)
+        # jax.debug.print(" u = {}", u0)
+        # jax.debug.print("x = {}", x)
         if jnp.any(jnp.abs(u0) >= alpha * u_max):
             near_constraint += 1
         xs.append(x)

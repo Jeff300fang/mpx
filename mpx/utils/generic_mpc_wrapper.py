@@ -13,6 +13,7 @@ import mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers as optimizers
 class GenericMPCControllerWrapper:
     def __init__(
         self,
+        admm_config,
         config,
         dynamics,
         constraints,
@@ -26,6 +27,7 @@ class GenericMPCControllerWrapper:
         jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
         jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
 
+        self.admm_config = admm_config
         self.config = config
         self.shift = shift
 
@@ -50,6 +52,7 @@ class GenericMPCControllerWrapper:
         #     reference, parameter, W, x0, X_in, U_in, V_in, w, y, rho)
         work = partial(
             optimizers.mpc,
+            self.admm_config,
             cost,
             dynamics,
             None,               # hessian_approx
@@ -99,7 +102,7 @@ class GenericMPCControllerWrapper:
 
         # rho management (matches your earlier wrapper pattern)
         rho = jnp.asarray(rho, dtype=self.rho.dtype)
-        self.rho = jnp.maximum(jnp.minimum(rho, 1e2) * 0.9, 0.1)
+        self.rho = jnp.maximum(jnp.minimum(rho, 0.1) * 0.9, 0.1)
         self.y = rho / self.rho * self.y
 
         self.U0, self.X0, self.V0 = self._update_and_extract(U, X, V, x0)

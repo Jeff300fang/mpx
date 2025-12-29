@@ -28,7 +28,7 @@ import jax
 import jax.numpy as jnp
 
 from mpx.utils.generic_mpc_wrapper import GenericMPCControllerWrapper
-
+from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMConfig
 
 # -----------------------------
 # Angle wrapping
@@ -246,7 +246,7 @@ def rollout_with_disturbance(
       mean_ms: mean controller.run time (ms) over the rollout (0.0 if time_controller=False)
       min_ms:  min controller.run time (ms) over the rollout (0.0 if time_controller=False)
     """
-    T_steps = int(T_total_sec / dt)
+    T_steps = min(250, int(T_total_sec / dt))
 
     # compilation warmup (excluded from timings)
     _ = controller.run(x0=x0, reference=reference, parameter=parameter)
@@ -258,7 +258,7 @@ def rollout_with_disturbance(
     total_time = 0.0
     min_time = float("inf")
 
-    for k in range(min(2000, T_steps)):
+    for k in range(T_steps):
         if time_controller:
             start = time.perf_counter()
             u0, X_pred, U_pred, V_pred = controller.run(x0=x, reference=reference, parameter=parameter)
@@ -273,9 +273,10 @@ def rollout_with_disturbance(
 
         key, sub = jax.random.split(key)
         tau_d = tau_disturb(k, sub)
-
-        x = pendulum_step(x, u0 + tau_d, dt, p)
-
+        if k > 3:
+            x = pendulum_step(x, u0 + tau_d, dt, p)
+        else:
+            x = pendulum_step(x, u0, dt, p)
         if jnp.any(jnp.abs(u0) >= alpha * u_max):
             near_constraint += 1
 
@@ -297,8 +298,12 @@ def main():
     n = 2 * nlinks
     nu = nlinks
 
-    N = 3000
+    N = 4000
     dt = 0.5 / N
+
+    amp_max = 28.0      # start
+    amp_step = 0.2      # linear increment
+    amp_cap = 50.0  
 
     # Weights: (q, qd, u)
     W = jnp.array([50.0, 5.0, 0.1], dtype=jnp.float32)
@@ -309,6 +314,14 @@ def main():
         N=N,
         W=W,
         u_ref=jnp.zeros((nu,), dtype=jnp.float32),
+    )
+
+    admm_cfg = ADMMConfig(
+        eps_abs=1e-2,
+        eps_rel=1e-2,
+        condense_block_size=5,
+        rho_max=1e10,
+        max_iterations=400
     )
 
     # Pendulum parameters
@@ -334,7 +347,7 @@ def main():
     x0 = jnp.concatenate([q0, qd0], axis=0)
 
     # Torque bounds (fixed)
-    u_max = (2.5) * jnp.ones((nu,), dtype=jnp.float32)
+    u_max = (3.0) * jnp.ones((nu,), dtype=jnp.float32)
     u_min = -u_max
     constraints_torque = make_torque_box_constraints(u_min, u_max)
     nc = 2 * nu
@@ -342,6 +355,7 @@ def main():
 
     # Controller
     controller = GenericMPCControllerWrapper(
+        admm_cfg,
         config=cfg,
         dynamics=dynamics,
         constraints=constraints_torque,
@@ -355,14 +369,11 @@ def main():
     # ---------------------------------------------------------------------
     # Calibration: increase disturbance amp_max until near_rate > 10%
     # ---------------------------------------------------------------------
-    target_near_rate = 0.10
+    target_near_rate = 0.20
     alpha = 0.95
     seed = 0
     T_total_sec = 1.0
-
-    amp_max = 16.0      # start
-    amp_step = 0.5      # linear increment
-    amp_cap = 50.0      # safety cap
+    # safety cap
 
     best_amp = None
     best_rate = None
@@ -371,7 +382,7 @@ def main():
         tau_disturb = make_random_periodic_pushes(
             nu=nu,
             dt=dt,
-            period_sec=0.1,
+            period_sec=0.05,
             push_duration_sec=0.05,
             amp_max=amp_max,
             per_joint=True,
