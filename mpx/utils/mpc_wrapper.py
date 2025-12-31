@@ -193,7 +193,7 @@ class BatchedMPCControllerWrapper:
         return data
 
 class MPCControllerWrapper:
-    def __init__(self, config, admm_config, constraints, num_constraints, disturbance, limited_memory=False):
+    def __init__(self, config, sls_config, admm_config, constraints, num_constraints, disturbance, limited_memory=False):
         """
         Initializes the MPC controller wrapper.
 
@@ -205,6 +205,7 @@ class MPCControllerWrapper:
         jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
         jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
 
+        self.sls_config = sls_config
         self.admm_config = admm_config
         self.model = mujoco.MjModel.from_xml_path(config.model_path)
         self.data = mujoco.MjData(self.model)
@@ -248,7 +249,7 @@ class MPCControllerWrapper:
         self.constraints = constraints
         self.disturbance = disturbance
 
-        work = partial(optimizers.mpc, self.admm_config, self.cost, self.dynamics, hessian_approx, limited_memory, self.constraints, self.disturbance)
+        work = partial(optimizers.mpc, self.sls_config, self.admm_config, self.cost, self.dynamics, hessian_approx, limited_memory, self.constraints, self.disturbance)
 
         reference_generator = partial(mpc_utils.reference_generator,
             config.use_terrain_estimation ,config.N, config.dt, config.n_joints, config.n_contact, robot_mass,foot0 = config.p_legs0, q0 = config.q0)

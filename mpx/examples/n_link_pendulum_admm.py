@@ -239,11 +239,11 @@ class MPCConfig:
 # -----------------------------
 def main():
     # Problem setup
-    nlinks = 10
+    nlinks = 50
     n = 2 * nlinks
     nu = nlinks
 
-    N = 1000
+    N = 200
     dt = min(0.5 / N, 0.005)
 
     # Weights: (q, qd, u)
@@ -379,7 +379,9 @@ def main():
     print("Min run time (ms):", min_time * 1000.0)
     print("Near constraint: ", near_constraint)
     print("Percentage:", near_constraint / T_steps)
-
+    print(us)
+    print(jnp.argmax(us))
+    print(us.shape)
 
 if __name__ == "__main__":
     main()

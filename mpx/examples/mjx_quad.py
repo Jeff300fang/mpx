@@ -20,7 +20,7 @@ import mpx.config.config_aliengo as config
 
 from timeit import default_timer as timer
 from mpx.utils.render_obstacles import render_static_vertical_cylinder
-from mpx.utils.mpc_utils import outside_circle_constraints
+from mpx.utils.mpc_utils import outside_circle_constraints, combine_constraints
 # Set GPU device for JAX
 # gpu_device = jax.devices('gpu')[0]
 # jax.default_device(gpu_device)

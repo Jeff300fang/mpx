@@ -13,6 +13,7 @@ import mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers as optimizers
 class GenericMPCControllerWrapper:
     def __init__(
         self,
+        sls_config,
         admm_config,
         config,
         dynamics,
@@ -27,6 +28,7 @@ class GenericMPCControllerWrapper:
         jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
         jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
 
+        self.sls_config = sls_config
         self.admm_config = admm_config
         self.config = config
         self.shift = shift
@@ -52,6 +54,7 @@ class GenericMPCControllerWrapper:
         #     reference, parameter, W, x0, X_in, U_in, V_in, w, y, rho)
         work = partial(
             optimizers.mpc,
+            self.sls_config,
             self.admm_config,
             cost,
             dynamics,
@@ -96,9 +99,12 @@ class GenericMPCControllerWrapper:
         )
 
         # Warm-start ADMM-ish states
+        # TODO: Make this an option to warm start / not warm
         s = self.shift
-        self.w = jnp.concatenate([w[s:], jnp.tile(w[-1:], (s, 1))], axis=0)
-        self.y = jnp.concatenate([y[s:], jnp.tile(y[-1:], (s, 1))], axis=0)
+        self.w = jnp.zeros_like(w)
+        self.y = jnp.zeros_like(y)
+        # self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
+        # self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
 
         # rho management (matches your earlier wrapper pattern)
         rho = jnp.asarray(rho, dtype=self.rho.dtype)

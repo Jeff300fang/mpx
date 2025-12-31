@@ -428,3 +428,13 @@ def outside_circle_constraints(x, u, t, centers, radii):
     dist2 = jnp.sum(diff * diff, axis=-1)     # (K,)
     g_t = radii**2 - dist2                     # (K,)
     return g_t
+
+def combine_constraints(*funcs):
+    """
+    Combine multiple g_i(x,u,t) functions into one by concatenation.
+    Each func must return a 1D array.
+    """
+    def constraints(x, u, t):
+        parts = [f(x, u, t) for f in funcs]
+        return jnp.concatenate(parts, axis=0)
+    return constraints
