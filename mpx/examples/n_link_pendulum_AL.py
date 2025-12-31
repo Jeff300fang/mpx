@@ -255,7 +255,7 @@ def main():
     n = 2 * nlinks
     nu = nlinks
 
-    N = 1000
+    N = 2000
     dt = min(0.5 / N, cfg.dt_cap)
 
     W = jnp.array(cfg.W, dtype=jnp.float32)

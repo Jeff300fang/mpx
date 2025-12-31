@@ -22,6 +22,8 @@ from typing import Any, Callable
 import time
 import jax
 import jax.numpy as jnp
+from jax import config
+config.update("jax_enable_x64", True)
 
 from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMConfig
 from mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers import SLSConfig
@@ -217,19 +219,19 @@ def main():
     dt = 0.05
 
     # Weights: (pos, theta, v, omega)
-    W = jnp.array([10.0, 2.0, 0.1, 0.1], dtype=jnp.float32)
+    W = jnp.array([10.0, 2.0, 0.1, 0.1])
 
     cfg = MPCConfig(
         n=n,
         nu=nu,
         N=N,
         W=W,
-        u_ref=jnp.zeros((nu,), dtype=jnp.float32),
+        u_ref=jnp.zeros((nu,)),
     )
 
     admm_cfg = ADMMConfig(
-        eps_abs=1e-3,
-        eps_rel=1e-3,
+        eps_abs=1e-5,
+        eps_rel=1e-5,
         condense_block_size=5,
         rho_max=1e10,
         max_iterations=400,
@@ -245,13 +247,12 @@ def main():
     v_max = 5.0
     om_max = 2.5
 
-    u_min = jnp.array([-v_max, -om_max], dtype=jnp.float32)
-    u_max = jnp.array([v_max,  om_max], dtype=jnp.float32)
+    u_min = jnp.array([-v_max, -om_max])
+    u_max = jnp.array([v_max,  om_max])
 
     constraints_u = make_control_box_constraints(u_min, u_max)
-    centers = jnp.array([[1.0, 0.1]], dtype=jnp.float32)   # (K,2)
-    radii   = jnp.array([0.12], dtype=jnp.float32)         # (K,)
-    # radii   = jnp.array([0.1], dtype=jnp.float32)         # (K,)
+    centers = jnp.array([[1.0, 0.05]])   # (K,2)
+    radii   = jnp.array([0.1])         # (K,)
     K = centers.shape[0]
 
     # Inflate a bit if you want “safety margin”
@@ -288,7 +289,7 @@ def main():
     # -----------------------------
     # Initial condition
     # -----------------------------
-    x = jnp.array([0.0, 0.0, 0.0], dtype=jnp.float32)
+    x = jnp.array([0.0, 0.0, 0.0])
     X_ref, U_ref = build_forward_reference(x, N, dt)
     reference = X_ref
     # Closed-loop rollout
@@ -303,7 +304,7 @@ def main():
     _ = controller.run(x0=x, reference=reference, parameter=parameter)
 
     key = jax.random.PRNGKey(0)
-    E_sim = alpha_sim * jnp.eye(3, dtype=jnp.float32)
+    E_sim = alpha_sim * jnp.eye(3)
 
     for k in range(T_steps):
         print(f"sim iteration {k}")
@@ -329,7 +330,7 @@ def main():
 
     xs = jnp.stack(xs, axis=0)
     us = jnp.stack(us, axis=0)
-    print("Total time (ms):", total_time / T_steps* 1000)
+    print("Average Time (ms):", total_time / T_steps* 1000)
     print("Min time (ms):", min_time * 1000)
 
 

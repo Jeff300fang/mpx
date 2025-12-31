@@ -41,7 +41,7 @@ class GenericMPCControllerWrapper:
         # ADMM states for inequality constraints
         self.w = jnp.zeros((config.N + 1, num_constraints))                # (T+1, nc)
         self.y = jnp.zeros((config.N + 1, num_constraints))                # (T+1, nc)
-        self.rho = jnp.asarray(0.1, dtype=jnp.float32)
+        self.rho = jnp.asarray(0.1, dtype=self.w.dtype)
 
         # Store callables
         self.dynamics = dynamics
