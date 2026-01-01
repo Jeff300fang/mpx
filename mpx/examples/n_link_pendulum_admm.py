@@ -18,9 +18,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 from jax import config
-config.update("jax_enable_x64", True)
+config.update("jax_enable_x64", False)
 
-from mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers import SLSConfig
+from mpx.primal_dual_ilqr.primal_dual_ilqr.fast_sls import SLSConfig
 import time
 import jax
 import jax.numpy as jnp
@@ -262,12 +262,13 @@ def main():
 
     sls_cfg = SLSConfig(
         max_sls_iterations=1,
-        sls_primal_tol=1e-2
+        sls_primal_tol=1e-2,
+        enable_fastsls=False
     )
 
     admm_cfg = ADMMConfig(
-        eps_abs=1e-6,
-        eps_rel=1e-6,
+        eps_abs=1e-2,
+        eps_rel=1e-2,
         condense_block_size=5,
         rho_max=1e10,
         max_iterations=400

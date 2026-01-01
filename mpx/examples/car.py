@@ -79,15 +79,15 @@ def dubins_step_with_disturbance(
     x_nom = jnp.array([px_next, py_next, th_next], dtype=x.dtype)
 
     # Sample w ~ Uniform(unit l2 ball in R^3)
-    # key, key_dir, key_rad = jax.random.split(key, 3)
-    # z = jax.random.normal(key_dir, (x.shape[0],), dtype=x.dtype)
-    # z_norm = jnp.linalg.norm(z) + jnp.asarray(1e-12, dtype=x.dtype)
-    # z = z / z_norm
+    key, key_dir, key_rad = jax.random.split(key, 3)
+    z = jax.random.normal(key_dir, (x.shape[0],), dtype=x.dtype)
+    z_norm = jnp.linalg.norm(z) + jnp.asarray(1e-12, dtype=x.dtype)
+    z = z / z_norm
 
-    # n = jnp.asarray(x.shape[0], dtype=x.dtype)  # n = 3, but keep generic
-    # r = jax.random.uniform(key_rad, (), minval=0.0, maxval=1.0, dtype=x.dtype) ** (1.0 / n)
-    # w = r * z  # ||w||_2 <= 1
-    w = jnp.array([0.7, 0.3, 0])
+    n = jnp.asarray(x.shape[0], dtype=x.dtype)  # n = 3, but keep generic
+    r = jax.random.uniform(key_rad, (), minval=0.0, maxval=1.0, dtype=x.dtype) ** (1.0 / n)
+    w = r * z  # ||w||_2 <= 1
+    w = jnp.array([0.707, 0.707, 0])
 
     # Additive disturbance
     x_next = x_nom + E @ w
@@ -226,9 +226,11 @@ def main():
     # Horizon and dt
     N = 50
     dt = 0.025
+    # N = 100
+    # dt = 0.01
 
     # Weights: (x, y, theta, v, omega)
-    W = jnp.array([5.0, 0.1, 0.1, 0.1, 0.1])
+    W = jnp.array([5.0, 0.3, 0.1, 0.1, 0.1])
 
     cfg = MPCConfig(
         n=n,
@@ -239,9 +241,8 @@ def main():
     )
 
     admm_cfg = ADMMConfig(
-        eps_abs=1e-4,
-        eps_rel=1e-4,
-        condense_block_size=5,
+        eps_abs=5e-2,
+        eps_rel=5e-2,
         rho_max=1e3,
         max_iterations=400,
     )
@@ -261,7 +262,7 @@ def main():
 
     constraints_u = make_control_box_constraints(u_min, u_max)
     centers = jnp.array([[1.0, 0.08]])   # (K,2)
-    radii   = jnp.array([0.2])         # (K,)
+    radii   = jnp.array([0.15])         # (K,)
     K = centers.shape[0]
 
     # Inflate a bit if you want “safety margin”
@@ -331,8 +332,8 @@ def main():
         min_time = min(min_time, dt_run)
 
         # apply
-        # key, x = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-        x = dubins_step(x, u0, dt)
+        key, x = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
+        # x = dubins_step(x, u0, dt)
         # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
         jax.debug.print("x = {} y = {}", x[0], x[1])
         # jax.debug.print("x_disturb = {} y_disturb = {}", x_disturb[0], x_disturb[1])
