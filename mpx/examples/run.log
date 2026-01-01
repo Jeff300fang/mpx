@@ -1,425 +1,687 @@
-W1230 11:47:50.036485   20993 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
-W1230 11:47:50.038237   20890 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+W1231 22:15:41.728604  911652 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+W1231 22:15:41.730497  911546 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
 Failed to import warp: No module named 'warp'
 Failed to import mujoco_warp: No module named 'warp'
-ADMM done: Total Iterations=127 converged=True rho=3.125e+02 rp=6.330e-04 (<= 1.999e-03) rd=0.000e+00 (<= 1.300e-02) Rho0 1.000e-01
+ADMM done: Total Iterations=70 converged=True rho=2.500e+00 rp=0.000e+00 (<= 1.782e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=33 converged=True rho=1.125e+01 rp=0.000e+00 (<= 1.416e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.250e+00
 sim iteration 0
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.180e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.02517782710492611 y = 0.0
-Distance to obstacle 0.9799378514289856
+ADMM done: Total Iterations=2 converged=True rho=9.113e+00 rp=0.000e+00 (<= 1.563e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.113e+00
+ADMM done: Total Iterations=2 converged=True rho=8.201e+00 rp=0.000e+00 (<= 1.666e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.201e+00
+u = [ 1.07941270e+00 -5.79560468e-04]
+x = 0.026985317384881215 y = 0.0
+Distance to obstacle 0.976297891314224
 sim iteration 1
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.095e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.050194017589092255 y = -7.753622810469096e-08
-Distance to obstacle 0.9550557136535645
+ADMM done: Total Iterations=100 converged=True rho=6.643e+00 rp=0.000e+00 (<= 1.649e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 6.643e+00
+ADMM done: Total Iterations=36 converged=True rho=2.989e+01 rp=0.000e+00 (<= 1.288e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.979e+00
+u = [ 1.35913701 -0.0174538 ]
+x = 0.060963742716687905 y = -4.923138025685219e-07
+Distance to obstacle 0.9424378872175617
 sim iteration 2
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.083e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.07519392669200897 y = -1.788637717936581e-07
-Distance to obstacle 0.9301969408988953
+ADMM done: Total Iterations=2 converged=True rho=2.421e+01 rp=0.000e+00 (<= 1.329e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.421e+01
+ADMM done: Total Iterations=2 converged=True rho=2.179e+01 rp=0.000e+00 (<= 1.364e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.179e+01
+u = [ 1.70602733 -0.03120777]
+x = 0.10361442155475532 y = -1.9720687784798814e-05
+Distance to obstacle 0.8999501435877251
 sim iteration 3
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.078e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.10019350051879883 y = -2.921106840858556e-07
-Distance to obstacle 0.9053462147712708
+ADMM done: Total Iterations=2 converged=True rho=1.765e+01 rp=0.000e+00 (<= 1.401e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.765e+01
+ADMM done: Total Iterations=68 converged=True rho=3.972e+02 rp=0.000e+00 (<= 1.224e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.589e+01
+u = [ 1.90207872 -0.05118289]
+x = 0.15116635340480913 y = -7.825848515167614e-05
+Distance to obstacle 0.8526025375719358
 sim iteration 4
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.076e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.12519341707229614 y = -4.113195473109954e-07
-Distance to obstacle 0.8805036544799805
+ADMM done: Total Iterations=2 converged=True rho=3.217e+02 rp=0.000e+00 (<= 1.226e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.217e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.009e-02 (<= 1.214e-04) rd=1.388e-14 (<= 7.694e-01) Rho0 2.895e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=4.245e-03 (<= 2.019e-04) rd=0.000e+00 (<= 1.150e-01) Rho0 1.000e-01
+ADMM done: Total Iterations=37 converged=True rho=1.000e+03 rp=0.000e+00 (<= 2.321e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.000e+02
+u = [ 0.54197655 -0.08953772]
+x = 0.16471572446899552 y = -0.00011227561195583559
+Distance to obstacle 0.8391172728844766
 sim iteration 5
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.075e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.15019342303276062 y = -5.305288368617767e-07
-Distance to obstacle 0.8556700944900513
+ADMM done: Total Iterations=2 converged=True rho=8.100e+02 rp=0.000e+00 (<= 2.263e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=2 converged=True rho=7.290e+02 rp=0.000e+00 (<= 2.260e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 7.290e+02
+u = [-0.73144862 -0.11225889]
+x = 0.14642971523992807 y = -2.5433910690999783e-05
+Distance to obstacle 0.857313420574987
 sim iteration 6
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.075e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.1751934140920639 y = -6.497381264125579e-07
-Distance to obstacle 0.8308465480804443
+ADMM done: Total Iterations=2 converged=True rho=6.561e+02 rp=0.000e+00 (<= 2.209e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 6.561e+02
+ADMM done: Total Iterations=2 converged=True rho=5.905e+02 rp=0.000e+00 (<= 2.204e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.905e+02
+u = [-1.90840794 -0.12080862]
+x = 0.09872087853971467 y = 0.0003350378032753792
+Distance to obstacle 0.9047931039646739
 sim iteration 7
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.075e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.200193390250206 y = -7.629868150615948e-07
-Distance to obstacle 0.8060339689254761
+ADMM done: Total Iterations=2 converged=True rho=5.314e+02 rp=0.000e+00 (<= 2.159e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.314e+02
+ADMM done: Total Iterations=2 converged=True rho=4.783e+02 rp=0.000e+00 (<= 2.153e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.783e+02
+u = [-2.97665309 -0.11602667]
+x = 0.024308712876223215 y = 0.0011220301908406141
+Distance to obstacle 0.978874466870225
 sim iteration 8
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.2251933515071869 y = -8.702750164957251e-07
-Distance to obstacle 0.7812333106994629
+ADMM done: Total Iterations=2 converged=True rho=4.305e+02 rp=0.000e+00 (<= 2.109e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.305e+02
+ADMM done: Total Iterations=2 converged=True rho=3.874e+02 rp=0.000e+00 (<= 2.102e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.874e+02
+u = [-3.92054207 -0.0988461 ]
+x = -0.0736959387398343 y = 0.0024428598107680962
+Distance to obstacle 1.0764934179365642
 sim iteration 9
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.2501932978630066 y = -9.716027307149488e-07
-Distance to obstacle 0.7564458250999451
+ADMM done: Total Iterations=2 converged=True rho=3.487e+02 rp=0.000e+00 (<= 2.057e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.487e+02
+ADMM done: Total Iterations=2 converged=True rho=3.138e+02 rp=0.000e+00 (<= 2.049e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.138e+02
+u = [-4.72123825 -0.07050104]
+x = -0.19171188630543928 y = 0.004325084628777268
+Distance to obstacle 1.1941121860102215
 sim iteration 10
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.2751932442188263 y = -1.066969957719266e-06
-Distance to obstacle 0.7316727638244629
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 1.981e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.824e+02
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 1.902e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.000e+02
+u = [-3.97987127 -0.03060995]
+x = -0.29119306501815256 y = 0.006087088099358914
+Distance to obstacle 1.2933068660208231
 sim iteration 11
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.300193190574646 y = -1.1504163239806076e-06
-Distance to obstacle 0.7069157361984253
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=7.141e-02 (<= 3.226e-04) rd=0.000e+00 (<= 2.671e+00) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=4.511e+00 (<= 6.054e-04) rd=0.000e+00 (<= 1.687e+02) Rho0 9.000e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.237e-02 (<= 5.238e-04) rd=0.000e+00 (<= 3.311e-01) Rho0 1.000e-01
+ADMM done: Total Iterations=52 converged=True rho=2.000e+02 rp=0.000e+00 (<= 5.185e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.000e+02
+u = [-0.27291075 -0.02319884]
+x = -0.298014669354192 y = 0.0062131337977267605
+Distance to obstacle 1.3001102197439358
 sim iteration 12
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.3251931369304657 y = -1.2219418294989737e-06
-Distance to obstacle 0.6821762919425964
+ADMM done: Total Iterations=2 converged=True rho=1.620e+02 rp=0.000e+00 (<= 5.475e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.620e+02
+ADMM done: Total Iterations=108 converged=True rho=1.000e+03 rp=0.000e+00 (<= 4.986e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.458e+02
+u = [ 3.69739865 -0.15212213]
+x = -0.2055964842590306 y = 0.0044518647538732865
+Distance to obstacle 1.2079612591457154
 sim iteration 13
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.3501930832862854 y = -1.2815463605875266e-06
-Distance to obstacle 0.6574566960334778
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.033e+01 (<= 1.980e-03) rd=0.000e+00 (<= 3.865e+02) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.833e+04 (<= 1.834e+00) rd=0.000e+00 (<= 6.855e+05) Rho0 9.000e+02
+ADMM done: Total Iterations=135 converged=True rho=2.182e+02 rp=0.000e+00 (<= 2.942e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=78 converged=True rho=9.818e+02 rp=0.000e+00 (<= 3.211e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.964e+02
+u = [ 1.25287249 -0.13164365]
+x = -0.17428285462554127 y = 0.003735962184555305
+Distance to obstacle 1.1767567404231962
 sim iteration 14
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.3751930296421051 y = -1.329230030933104e-06
-Distance to obstacle 0.6327590942382812
+ADMM done: Total Iterations=2 converged=True rho=7.953e+02 rp=0.000e+00 (<= 3.052e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 7.953e+02
+ADMM done: Total Iterations=2 converged=True rho=7.158e+02 rp=0.000e+00 (<= 3.050e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 7.158e+02
+u = [-0.89546656 -0.06891865]
+x = -0.19666186522928916 y = 0.0043212942105855705
+Distance to obstacle 1.1990524951827597
 sim iteration 15
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=9.928e-04 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.4001929759979248 y = -1.3649927268488682e-06
-Distance to obstacle 0.608086109161377
+ADMM done: Total Iterations=2 converged=True rho=6.442e+02 rp=0.000e+00 (<= 2.865e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 6.442e+02
+ADMM done: Total Iterations=2 converged=True rho=5.798e+02 rp=0.000e+00 (<= 2.862e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.798e+02
+u = [-2.62998742  0.02938391]
+x = -0.2623860128458671 y = 0.006153658915652765
+Distance to obstacle 1.2645440789155715
 sim iteration 16
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=2.423e-03 (<= 1.085e-03) rd=0.000e+00 (<= 2.239e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=2.423e-03 (<= 1.085e-03) rd=0.000e+00 (<= 2.239e+05) Rho0 1.000e-01
-x = 0.4251464307308197 y = -1.3887902241549455e-06
-Distance to obstacle 0.583486795425415
+ADMM done: Total Iterations=2 converged=True rho=5.218e+02 rp=0.000e+00 (<= 2.651e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.218e+02
+ADMM done: Total Iterations=2 converged=True rho=4.696e+02 rp=0.000e+00 (<= 2.648e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.696e+02
+u = [-3.86127216  0.15541485]
+x = -0.3588822731082188 y = 0.0087729990432052
+Distance to obstacle 1.360747705430018
 sim iteration 17
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=3.529e-03 (<= 1.170e-03) rd=0.000e+00 (<= 3.262e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=3.529e-03 (<= 1.170e-03) rd=0.000e+00 (<= 3.262e+05) Rho0 1.000e-01
-x = 0.45203837752342224 y = -3.0493783924612217e-06
-Distance to obstacle 0.557012140750885
+ADMM done: Total Iterations=2 converged=True rho=4.227e+02 rp=0.000e+00 (<= 2.411e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.227e+02
+ADMM done: Total Iterations=2 converged=True rho=3.804e+02 rp=0.000e+00 (<= 2.409e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.804e+02
+u = [-4.52367822  0.29966189]
+x = -0.47194365701967184 y = 0.011402425747857492
+Distance to obstacle 1.4735412300420112
 sim iteration 18
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=4.501e-03 (<= 1.869e-03) rd=0.000e+00 (<= 4.159e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=4.501e-03 (<= 1.869e-03) rd=0.000e+00 (<= 4.159e+05) Rho0 1.000e-01
-x = 0.4710138142108917 y = 7.046307291602716e-05
-Distance to obstacle 0.5383421778678894
+ADMM done: Total Iterations=2 converged=True rho=3.423e+02 rp=0.000e+00 (<= 2.151e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.423e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.285e-02 (<= 2.157e-04) rd=2.776e-14 (<= 4.960e-01) Rho0 3.081e+02
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 3.475e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.619e-02 (<= 4.764e-04) rd=0.000e+00 (<= 6.925e-01) Rho0 1.000e-01
+u = [0.32116377 0.01353201]
+x = -0.46391556009216567 y = 0.01127588531198197
+Distance to obstacle 1.465527813117039
 sim iteration 19
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=3.582e-03 (<= 1.772e-03) rd=0.000e+00 (<= 3.308e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=3.582e-03 (<= 1.772e-03) rd=0.000e+00 (<= 3.308e+05) Rho0 1.000e-01
-x = 0.494915634393692 y = 5.101932038087398e-05
-Distance to obstacle 0.5148786306381226
+ADMM done: Total Iterations=3 converged=True rho=8.100e+02 rp=0.000e+00 (<= 4.085e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.377e-02 (<= 4.045e-04) rd=0.000e+00 (<= 1.441e+00) Rho0 7.290e+02
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.280e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.418e-02 (<= 1.375e-04) rd=0.000e+00 (<= 8.982e-01) Rho0 1.000e-01
+u = [ 0.88847282 -0.00984949]
+x = -0.4417063810689108 y = 0.010933335081060952
+Distance to obstacle 1.4433597934741844
 sim iteration 20
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=1.809e-04 (<= 1.692e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.5169338583946228 y = -0.0005943664582446218
-Distance to obstacle 0.49342894554138184
+ADMM done: Total Iterations=3 converged=True rho=8.100e+02 rp=0.000e+00 (<= 1.252e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.253e-02 (<= 1.232e-04) rd=0.000e+00 (<= 1.333e+00) Rho0 7.290e+02
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.134e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.957e-02 (<= 1.079e-04) rd=0.000e+00 (<= 1.042e+00) Rho0 1.000e-01
+u = [ 0.9343642 -0.0270132]
+x = -0.418350143557625 y = 0.01056734026833739
+Distance to obstacle 1.4200485991568559
 sim iteration 21
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=7.294e-04 (<= 1.245e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.5420015454292297 y = -0.0010214177891612053
-Distance to obstacle 0.46900737285614014
+ADMM done: Total Iterations=3 converged=True rho=8.100e+02 rp=0.000e+00 (<= 1.078e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.446e-02 (<= 1.063e-04) rd=0.000e+00 (<= 9.817e-01) Rho0 7.290e+02
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.163e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.947e-02 (<= 1.070e-04) rd=0.000e+00 (<= 1.041e+00) Rho0 1.000e-01
+u = [ 0.92518244 -0.03874533]
+x = -0.3952236718438553 y = 0.010189323906109852
+Distance to obstacle 1.3969690851876917
 sim iteration 22
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=8.602e-04 (<= 1.116e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.5671898722648621 y = -0.001442817854695022
-Distance to obstacle 0.4445393979549408
+ADMM done: Total Iterations=3 converged=True rho=8.100e+02 rp=0.000e+00 (<= 1.069e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.377e-02 (<= 1.055e-04) rd=0.000e+00 (<= 9.548e-01) Rho0 7.290e+02
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.195e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=164 converged=True rho=2.033e+01 rp=0.000e+00 (<= 1.246e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+u = [ 0.88310492 -0.11790359]
+x = -0.3731493574459761 y = 0.009807117729215914
+Distance to obstacle 1.3749422528149235
 sim iteration 23
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=7.332e-04 (<= 1.075e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.5918623208999634 y = -0.0019341609440743923
-Distance to obstacle 0.4206744134426117
+ADMM done: Total Iterations=2 converged=True rho=1.646e+01 rp=0.000e+00 (<= 1.216e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.646e+01
+ADMM done: Total Iterations=2 converged=True rho=1.482e+01 rp=0.000e+00 (<= 1.190e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.482e+01
+u = [ 0.90745028 -0.18979617]
+x = -0.35046775641930766 y = 0.009347516969249889
+Distance to obstacle 1.3523146580905676
 sim iteration 24
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=8.704e-04 (<= 1.075e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.6167556047439575 y = -0.002352547599002719
-Distance to obstacle 0.39667657017707825
+ADMM done: Total Iterations=2 converged=True rho=1.200e+01 rp=0.000e+00 (<= 1.152e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.200e+01
+ADMM done: Total Iterations=2 converged=True rho=1.080e+01 rp=0.000e+00 (<= 1.117e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.080e+01
+u = [ 1.00221755 -0.25137737]
+x = -0.3254201504950025 y = 0.008721063875888875
+Distance to obstacle 1.3273353992390846
 sim iteration 25
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=1.001e-03 (<= 1.075e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.6415648460388184 y = -0.0026986263692378998
-Distance to obstacle 0.37285757064819336
+ADMM done: Total Iterations=2 converged=True rho=8.750e+00 rp=0.000e+00 (<= 1.125e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.750e+00
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.639e-03 (<= 1.114e-04) rd=0.000e+00 (<= 2.047e-01) Rho0 7.875e+00
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=7.104e-03 (<= 1.671e-04) rd=1.110e-13 (<= 1.931e-01) Rho0 1.000e-01
+ADMM done: Total Iterations=38 converged=True rho=1.000e+03 rp=0.000e+00 (<= 1.430e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.000e+02
+u = [ 0.70671689 -0.12502698]
+x = -0.30776087632391824 y = 0.00816832975128185
+Distance to obstacle 1.3097321476142454
 sim iteration 26
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.113e-03 (<= 1.087e-03) rd=0.000e+00 (<= 1.027e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.113e-03 (<= 1.087e-03) rd=0.000e+00 (<= 1.027e+05) Rho0 1.000e-01
-x = 0.6665135622024536 y = -0.0029756175354123116
-Distance to obstacle 0.3490231931209564
+ADMM done: Total Iterations=2 converged=True rho=8.100e+02 rp=0.000e+00 (<= 1.428e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=2 converged=True rho=7.290e+02 rp=0.000e+00 (<= 1.429e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 7.290e+02
+u = [ 0.42179092 -0.00299335]
+x = -0.2972223473023978 y = 0.007805498867042929
+Distance to obstacle 1.299229719616427
 sim iteration 27
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=1.034e-03 (<= 1.068e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 0.6915817260742188 y = -0.0031944543588906527
-Distance to obstacle 0.3252244293689728
+ADMM done: Total Iterations=2 converged=True rho=6.561e+02 rp=0.000e+00 (<= 1.427e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 6.561e+02
+ADMM done: Total Iterations=2 converged=True rho=5.905e+02 rp=0.000e+00 (<= 1.428e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.905e+02
+u = [0.14646684 0.11398815]
+x = -0.2935628540363661 y = 0.007679232040506397
+Distance to obstacle 1.2955829386114037
 sim iteration 28
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.223e-03 (<= 1.087e-03) rd=0.000e+00 (<= 1.129e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.223e-03 (<= 1.087e-03) rd=0.000e+00 (<= 1.129e+05) Rho0 1.000e-01
-x = 0.7165812849998474 y = -0.00337064522318542
-Distance to obstacle 0.30168139934539795
+ADMM done: Total Iterations=2 converged=True rho=5.314e+02 rp=0.000e+00 (<= 1.427e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.314e+02
+ADMM done: Total Iterations=2 converged=True rho=4.783e+02 rp=0.000e+00 (<= 1.428e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.783e+02
+u = [-0.11886674  0.22557787]
+x = -0.29653303527892705 y = 0.007773241503782053
+Distance to obstacle 1.298543266977446
 sim iteration 29
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.290e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.191e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.290e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.191e+05) Rho0 1.000e-01
-x = 0.7415958046913147 y = -0.0035114071797579527
-Distance to obstacle 0.27836549282073975
+ADMM done: Total Iterations=2 converged=True rho=4.305e+02 rp=0.000e+00 (<= 1.428e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.305e+02
+ADMM done: Total Iterations=2 converged=True rho=3.874e+02 rp=0.000e+00 (<= 1.429e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.874e+02
+u = [-0.37303287  0.33152209]
+x = -0.30585570489986763 y = 0.008015695593277595
+Distance to obstacle 1.3078382400359954
 sim iteration 30
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.124e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.038e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.124e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.038e+05) Rho0 1.000e-01
-x = 0.766577422618866 y = -0.0036116307601332664
-Distance to obstacle 0.2553849518299103
+ADMM done: Total Iterations=2 converged=True rho=3.487e+02 rp=0.000e+00 (<= 1.429e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.487e+02
+ADMM done: Total Iterations=2 converged=True rho=3.138e+02 rp=0.000e+00 (<= 1.430e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.138e+02
+u = [-0.61406956  0.43148422]
+x = -0.3212050357453736 y = 0.008287607106516557
+Distance to obstacle 1.3231498077592891
 sim iteration 31
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.253e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.157e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.253e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.157e+05) Rho0 1.000e-01
-x = 0.7915223240852356 y = -0.003723072586581111
-Distance to obstacle 0.2328549176454544
+ADMM done: Total Iterations=2 converged=True rho=2.824e+02 rp=0.000e+00 (<= 1.431e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.824e+02
+ADMM done: Total Iterations=2 converged=True rho=2.542e+02 rp=0.000e+00 (<= 1.432e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.542e+02
+u = [-0.8392993   0.52492749]
+x = -0.34218701505980864 y = 0.00843292892060321
+Distance to obstacle 1.3440936831404433
 sim iteration 32
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.197e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.105e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.197e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.105e+05) Rho0 1.000e-01
-x = 0.8164346814155579 y = -0.003825364401564002
-Distance to obstacle 0.2108931839466095
+ADMM done: Total Iterations=2 converged=True rho=2.288e+02 rp=0.000e+00 (<= 1.434e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.288e+02
+ADMM done: Total Iterations=2 converged=True rho=2.059e+02 rp=0.000e+00 (<= 1.435e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.059e+02
+u = [-1.04537253  0.61103016]
+x = -0.3683208265513095 y = 0.008270968610451315
+Distance to obstacle 1.3701995979849582
 sim iteration 33
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.199e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.107e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.199e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.107e+05) Rho0 1.000e-01
-x = 0.8415469527244568 y = -0.003935254644602537
-Distance to obstacle 0.18949909508228302
+ADMM done: Total Iterations=2 converged=True rho=1.853e+02 rp=0.000e+00 (<= 1.437e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.853e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.815e-04 (<= 1.368e-04) rd=0.000e+00 (<= 1.913e-01) Rho0 1.668e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=5.997e-03 (<= 3.077e-04) rd=0.000e+00 (<= 1.605e-01) Rho0 1.000e-01
+ADMM done: Total Iterations=34 converged=True rho=1.000e+03 rp=0.000e+00 (<= 3.334e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.000e+02
+u = [0.38054213 0.52095208]
+x = -0.35880946658300633 y = 0.008475237650603902
+Distance to obstacle 1.3606906180703724
 sim iteration 34
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.177e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.086e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.177e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.086e+05) Rho0 1.000e-01
-x = 0.866510272026062 y = -0.004016019869595766
-Distance to obstacle 0.1692301332950592
+ADMM done: Total Iterations=2 converged=True rho=8.100e+02 rp=0.000e+00 (<= 3.302e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=2 converged=True rho=7.290e+02 rp=0.000e+00 (<= 3.300e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 7.290e+02
+u = [1.93230817 0.44992303]
+x = -0.3105305031955214 y = 0.010141369529567991
+Distance to obstacle 1.3123911109334407
 sim iteration 35
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.209e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.116e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.209e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.116e+05) Rho0 1.000e-01
-x = 0.8913537263870239 y = -0.0040673972107470036
-Distance to obstacle 0.15044613182544708
+ADMM done: Total Iterations=78 converged=True rho=1.000e+03 rp=0.000e+00 (<= 2.987e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 6.561e+02
+ADMM done: Total Iterations=2 converged=True rho=9.000e+02 rp=0.000e+00 (<= 2.985e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.000e+02
+u = [2.71613368 0.52860018]
+x = -0.2426981958642791 y = 0.013246517874854324
+Distance to obstacle 1.244489788379224
 sim iteration 36
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.217e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.124e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.217e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.124e+05) Rho0 1.000e-01
-x = 0.916273832321167 y = -0.0040694233030080795
-Distance to obstacle 0.1335683912038803
+ADMM done: Total Iterations=32 converged=True rho=1.000e+03 rp=0.000e+00 (<= 2.748e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.715e-01 (<= 5.288e-04) rd=0.000e+00 (<= 6.415e+00) Rho0 9.000e+02
+ADMM done: Total Iterations=40 converged=True rho=5.000e-01 rp=0.000e+00 (<= 3.483e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=30 converged=True rho=2.250e+00 rp=0.000e+00 (<= 2.995e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.500e-01
+u = [0.64619706 0.39985824]
+x = -0.22657134078593688 y = 0.014198459029622489
+Distance to obstacle 1.228335091427208
 sim iteration 37
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.224e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.130e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.224e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.130e+05) Rho0 1.000e-01
-x = 0.9412562847137451 y = -0.0040491241961717606
-Distance to obstacle 0.11948658525943756
+ADMM done: Total Iterations=83 converged=True rho=2.278e+02 rp=0.000e+00 (<= 2.337e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.823e+00
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=4.303e-03 (<= 2.337e-04) rd=0.000e+00 (<= 1.615e-01) Rho0 2.050e+02
+ADMM done: Total Iterations=32 converged=True rho=5.000e-01 rp=2.220e-16 (<= 3.384e-04) rd=2.220e-16 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=30 converged=True rho=2.250e+00 rp=0.000e+00 (<= 2.260e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.500e-01
+u = [1.13910235 1.76109932]
+x = -0.1981614602799791 y = 0.016160611965482602
+Distance to obstacle 1.1998609720983817
 sim iteration 38
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.228e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.133e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.228e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.133e+05) Rho0 1.000e-01
-x = 0.9663307070732117 y = -0.004005638416856527
-Distance to obstacle 0.10931969434022903
+ADMM done: Total Iterations=80 converged=True rho=2.278e+02 rp=0.000e+00 (<= 2.356e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.823e+00
+ADMM done: Total Iterations=117 converged=True rho=1.000e+03 rp=0.000e+00 (<= 5.017e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.050e+02
+u = [2.28735159 2.21044125]
+x = -0.14134226793251198 y = 0.022607719244186426
+Distance to obstacle 1.1427843394357853
 sim iteration 39
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.229e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.134e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.229e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.134e+05) Rho0 1.000e-01
-x = 0.9914899468421936 y = -0.003921702038496733
-Distance to obstacle 0.10426956415176392
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.908e+01 (<= 3.476e-03) rd=0.000e+00 (<= 1.088e+03) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=5.176e+04 (<= 5.177e+00) rd=0.000e+00 (<= 1.936e+06) Rho0 9.000e+02
+ADMM done: Total Iterations=107 converged=True rho=6.250e+01 rp=0.000e+00 (<= 6.664e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=55 converged=True rho=1.000e+03 rp=0.000e+00 (<= 5.506e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.625e+01
+u = [1.19767966 1.1656913 ]
+x = -0.11182305175954023 y = 0.027621573528529467
+Distance to obstacle 1.1130561522149387
 sim iteration 40
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.228e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.134e+05) Rho0 1.000e-01
-ADMM done: Total Iterations=399 converged=False rho=3.052e+09 rp=1.228e-03 (<= 1.080e-03) rd=0.000e+00 (<= 1.134e+05) Rho0 1.000e-01
-x = 1.0164587497711182 y = -0.003812350332736969
-Distance to obstacle 0.10510896146297455
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.270e+01 (<= 1.727e-03) rd=0.000e+00 (<= 4.750e+02) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.267e+04 (<= 2.267e+00) rd=0.000e+00 (<= 8.478e+05) Rho0 9.000e+02
+ADMM done: Total Iterations=108 converged=True rho=6.250e+01 rp=2.220e-16 (<= 9.401e-04) rd=2.776e-14 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=42 converged=True rho=2.812e+02 rp=4.441e-16 (<= 9.132e-04) rd=2.498e-13 (<= 1.000e-04) Rho0 5.625e+01
+u = [1.70857596 2.43259078]
+x = -0.0699380672286993 y = 0.03599820440173424
+Distance to obstacle 1.0708424840848239
 sim iteration 41
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=1.052e-03 (<= 1.068e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.041464924812317 y = -0.003682265989482403
-Distance to obstacle 0.1116662546992302
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 3.937e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.278e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.340e-03 (<= 3.881e-04) rd=0.000e+00 (<= 5.020e-02) Rho0 9.000e+02
+ADMM done: Total Iterations=130 converged=True rho=3.125e+02 rp=0.000e+00 (<= 6.414e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.062e-01 (<= 3.825e-04) rd=1.110e-13 (<= 1.145e+01) Rho0 2.812e+02
+u = [2.08661594 1.15965582]
+x = -0.019501916881863812 y = 0.049318247530358655
+Distance to obstacle 1.0199634936900452
 sim iteration 42
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.075e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.0664706230163574 y = -0.0035352460108697414
-Distance to obstacle 0.12303613871335983
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=5.088e+01 (<= 5.189e-03) rd=0.000e+00 (<= 1.903e+03) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=8.731e+04 (<= 8.731e+00) rd=9.095e-10 (<= 3.265e+06) Rho0 9.000e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.035e-03 (<= 7.226e-04) rd=0.000e+00 (<= 5.080e-02) Rho0 1.000e-01
+ADMM done: Total Iterations=33 converged=True rho=1.000e+03 rp=0.000e+00 (<= 7.240e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.000e+02
+u = [2.24622489 2.35034521]
+x = 0.034353721365123255 y = 0.06522498007572441
+Distance to obstacle 0.9657593057564337
 sim iteration 43
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.075e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.091475009918213 y = -0.0033744918182492256
-Distance to obstacle 0.1380361020565033
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.103e+01 (<= 1.674e-03) rd=0.000e+00 (<= 4.125e+02) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.951e+04 (<= 1.951e+00) rd=0.000e+00 (<= 7.296e+05) Rho0 9.000e+02
+ADMM done: Total Iterations=106 converged=True rho=6.250e+01 rp=0.000e+00 (<= 6.268e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=29 converged=True rho=2.812e+02 rp=0.000e+00 (<= 2.917e-04) rd=3.123e-14 (<= 1.000e-04) Rho0 5.625e+01
+u = [2.09725682 1.75097887]
+x = 0.08367874158844879 y = 0.08300407535082992
+Distance to obstacle 0.9163261826913177
 sim iteration 44
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.075e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.1164803504943848 y = -0.003202898660674691
-Distance to obstacle 0.15562297403812408
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 1.713e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.278e+02
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 1.697e-04) rd=1.388e-14 (<= 1.000e-04) Rho0 9.000e+02
+u = [1.95902677 1.63704912]
+x = 0.12898187409944895 y = 0.10161166427254713
+Distance to obstacle 0.8712861984904486
 sim iteration 45
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.141486406326294 y = -0.0030231266282498837
-Distance to obstacle 0.1750204861164093
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 1.675e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 4.372e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.000e+02
+u = [1.78855137 1.77501056]
+x = 0.1696129984296575 y = 0.12027805729854252
+Distance to obstacle 0.8313632745537469
 sim iteration 46
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.1664917469024658 y = -0.002837611362338066
-Distance to obstacle 0.1956912726163864
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.654e+01 (<= 2.141e-03) rd=0.000e+00 (<= 6.185e+02) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.951e+04 (<= 2.952e+00) rd=0.000e+00 (<= 1.104e+06) Rho0 9.000e+02
+ADMM done: Total Iterations=106 converged=True rho=6.250e+01 rp=1.740e-05 (<= 7.002e-04) rd=0.000e+00 (<= 1.007e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=29 converged=True rho=2.812e+02 rp=0.000e+00 (<= 3.439e-04) rd=6.245e-14 (<= 1.000e-04) Rho0 5.625e+01
+u = [1.19934625 1.79799926]
+x = 0.19627686278038675 y = 0.13399148038046155
+Distance to obstacle 0.8055345810428073
 sim iteration 47
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.1914970874786377 y = -0.002648554975166917
-Distance to obstacle 0.21727369725704193
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 2.456e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.278e+02
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 2.438e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.000e+02
+u = [0.61399515 1.59043327]
+x = 0.2095979506094927 y = 0.14161823585695155
+Distance to obstacle 0.792800231250494
 sim iteration 48
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.2165019512176514 y = -0.0024579521268606186
-Distance to obstacle 0.23952187597751617
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.327e-01 (<= 4.973e-04) rd=0.000e+00 (<= 4.962e+00) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.758e+02 (<= 1.772e-02) rd=0.000e+00 (<= 6.576e+03) Rho0 9.000e+02
+ADMM done: Total Iterations=132 converged=True rho=3.068e+02 rp=0.000e+00 (<= 5.876e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 2.192e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.761e+02
+u = [0.89545358 1.67635218]
+x = 0.22856799732048785 y = 0.15350459446736775
+Distance to obstacle 0.774925970764908
 sim iteration 49
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.2415062189102173 y = -0.0022675925865769386
-Distance to obstacle 0.2622668743133545
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 4.254e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=2 converged=True rho=9.000e+02 rp=0.000e+00 (<= 4.249e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.000e+02
+u = [1.14227827 1.48021121]
+x = 0.25211047312213997 y = 0.16966787404364359
+Distance to obstacle 0.753245691689701
 sim iteration 50
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.2665098905563354 y = -0.002079055877402425
-Distance to obstacle 0.28539037704467773
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.672e+01 (<= 2.175e-03) rd=0.000e+00 (<= 6.254e+02) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.981e+04 (<= 2.981e+00) rd=0.000e+00 (<= 1.115e+06) Rho0 9.000e+02
+ADMM done: Total Iterations=156 converged=True rho=1.000e+03 rp=0.000e+00 (<= 5.906e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.162e+00 (<= 1.510e-03) rd=0.000e+00 (<= 8.087e+01) Rho0 9.000e+02
+u = [-2.20485404 -0.00948841]
+x = 0.2078535644906978 y = 0.13680924696932345
+Distance to obstacle 0.7941808772762756
 sim iteration 51
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.2915128469467163 y = -0.001893737819045782
-Distance to obstacle 0.30880749225616455
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.852e+03 (<= 2.851e-01) rd=0.000e+00 (<= 1.067e+05) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=4.672e+06 (<= 4.672e+02) rd=0.000e+00 (<= 1.747e+08) Rho0 9.000e+02
+ADMM done: Total Iterations=155 converged=True rho=1.000e+03 rp=0.000e+00 (<= 7.977e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=8.285e-01 (<= 9.672e-04) rd=0.000e+00 (<= 3.100e+01) Rho0 9.000e+02
+u = [-2.46223745 -0.5067433 ]
+x = 0.15842162731644652 y = 0.10012659618966044
+Distance to obstacle 0.8418190050378287
 sim iteration 52
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.3165152072906494 y = -0.0017128530889749527
-Distance to obstacle 0.3324565887451172
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.471e+03 (<= 1.471e-01) rd=0.000e+00 (<= 5.500e+04) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.546e+06 (<= 2.546e+02) rd=0.000e+00 (<= 9.523e+07) Rho0 9.000e+02
+ADMM done: Total Iterations=132 converged=True rho=3.125e+02 rp=0.000e+00 (<= 1.205e-03) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.833e-01 (<= 1.162e-03) rd=0.000e+00 (<= 1.061e+01) Rho0 2.812e+02
+u = [-2.06518171  0.2369904 ]
+x = 0.11657455026554475 y = 0.06988702249375511
+Distance to obstacle 0.8834833317910227
 sim iteration 53
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.3415169715881348 y = -0.001537439413368702
-Distance to obstacle 0.35629159212112427
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=8.866e+01 (<= 8.989e-03) rd=0.000e+00 (<= 3.316e+03) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.586e+05 (<= 1.586e+01) rd=0.000e+00 (<= 5.931e+06) Rho0 9.000e+02
+ADMM done: Total Iterations=155 converged=True rho=1.000e+03 rp=5.222e-05 (<= 9.570e-04) rd=0.000e+00 (<= 1.261e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.079e-01 (<= 9.547e-04) rd=0.000e+00 (<= 4.035e+00) Rho0 9.000e+02
+u = [-0.15341739  2.39269004]
+x = 0.1134791954080568 y = 0.06762221829670814
+Distance to obstacle 0.8866072109193792
 sim iteration 54
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.3665180206298828 y = -0.0013683786382898688
-Distance to obstacle 0.38027751445770264
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.479e+02 (<= 1.488e-02) rd=0.000e+00 (<= 5.533e+03) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.669e+05 (<= 2.669e+01) rd=0.000e+00 (<= 9.982e+06) Rho0 9.000e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.205e-03 (<= 1.397e-03) rd=0.000e+00 (<= 5.527e-02) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.023e+00 (<= 1.625e-03) rd=0.000e+00 (<= 7.565e+01) Rho0 9.000e+02
+u = [0.10437545 0.58836931]
+x = 0.11548919863802429 y = 0.06928618443140078
+Distance to obstacle 0.8845756856086665
 sim iteration 55
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.3915187120437622 y = -0.0012063963804394007
-Distance to obstacle 0.4043879806995392
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.740e+03 (<= 3.740e-01) rd=0.000e+00 (<= 1.399e+05) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=6.680e+06 (<= 6.680e+02) rd=0.000e+00 (<= 2.498e+08) Rho0 9.000e+02
+ADMM done: Total Iterations=130 converged=True rho=3.125e+02 rp=0.000e+00 (<= 1.106e-03) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.129e-01 (<= 1.123e-03) rd=4.441e-13 (<= 1.170e+01) Rho0 2.812e+02
+u = [-0.06064543  1.16083443]
+x = 0.1143356702261578 y = 0.06830229419997999
+Distance to obstacle 0.8857415770724173
 sim iteration 56
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.4165189266204834 y = -0.0010520827490836382
-Distance to obstacle 0.42860186100006104
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=6.172e+01 (<= 6.285e-03) rd=0.000e+00 (<= 2.308e+03) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.070e+05 (<= 1.070e+01) rd=0.000e+00 (<= 4.002e+06) Rho0 9.000e+02
+ADMM done: Total Iterations=107 converged=True rho=6.250e+01 rp=0.000e+00 (<= 1.113e-03) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=9.253e-02 (<= 1.135e-03) rd=0.000e+00 (<= 3.233e+00) Rho0 5.625e+01
+u = [0.74572315 2.32913743]
+x = 0.1281629395879622 y = 0.08080713356360328
+Distance to obstacle 0.8718374340279802
 sim iteration 57
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.441518783569336 y = -0.0009058894356712699
-Distance to obstacle 0.4529026746749878
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=4.187e+00 (<= 1.107e-03) rd=0.000e+00 (<= 1.566e+02) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=7.410e+03 (<= 7.415e-01) rd=0.000e+00 (<= 2.771e+05) Rho0 9.000e+02
+ADMM done: Total Iterations=156 converged=True rho=1.000e+03 rp=0.000e+00 (<= 5.277e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.170e-01 (<= 5.440e-04) rd=0.000e+00 (<= 8.127e+00) Rho0 9.000e+02
+u = [1.16543138 1.98965204]
+x = 0.14859855023327984 y = 0.10157440980373228
+Distance to obstacle 0.851674752369267
 sim iteration 58
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.4665182828903198 y = -0.0007681563147343695
-Distance to obstacle 0.4772771894931793
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=3.512e+02 (<= 3.521e-02) rd=1.776e-12 (<= 1.313e+04) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=6.263e+05 (<= 6.263e+01) rd=0.000e+00 (<= 2.342e+07) Rho0 9.000e+02
+ADMM done: Total Iterations=108 converged=True rho=6.250e+01 rp=0.000e+00 (<= 5.973e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=56 converged=True rho=1.000e+03 rp=0.000e+00 (<= 5.957e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.625e+01
+u = [1.01903105 2.31761274]
+x = 0.16554210362603497 y = 0.12059889862626759
+Distance to obstacle 0.8354449421658671
 sim iteration 59
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.4915175437927246 y = -0.0006391151109710336
-Distance to obstacle 0.501714825630188
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.529e+01 (<= 2.036e-03) rd=0.000e+00 (<= 5.718e+02) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=2.683e+04 (<= 2.684e+00) rd=0.000e+00 (<= 1.004e+06) Rho0 9.000e+02
+ADMM done: Total Iterations=86 converged=True rho=1.250e+01 rp=0.000e+00 (<= 4.999e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=81 converged=True rho=1.000e+03 rp=0.000e+00 (<= 5.016e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.125e+01
+u = [1.10958922 2.31746765]
+x = 0.1827608493076585 y = 0.14234763287825625
+Distance to obstacle 0.8196139681275946
 sim iteration 60
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.5165166854858398 y = -0.0005188899231143296
-Distance to obstacle 0.5262067914009094
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.033e+00 (<= 6.570e-04) rd=0.000e+00 (<= 3.862e+01) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.772e+03 (<= 1.777e-01) rd=0.000e+00 (<= 6.627e+04) Rho0 9.000e+02
+ADMM done: Total Iterations=81 converged=True rho=1.250e+01 rp=0.000e+00 (<= 4.293e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=30 converged=True rho=5.625e+01 rp=0.000e+00 (<= 3.009e-04) rd=1.249e-14 (<= 1.000e-04) Rho0 1.125e+01
+u = [1.05982004 2.30166513]
+x = 0.19797681725221755 y = 0.16403831979960315
+Distance to obstacle 0.806414052989916
 sim iteration 61
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.541515588760376 y = -0.00040752856875769794
-Distance to obstacle 0.5507457256317139
+ADMM done: Total Iterations=30 converged=True rho=2.278e+02 rp=0.000e+00 (<= 2.965e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.556e+01
+ADMM done: Total Iterations=29 converged=True rho=1.000e+03 rp=0.000e+00 (<= 1.687e-04) rd=5.551e-14 (<= 1.000e-04) Rho0 2.050e+02
+u = [0.95014683 2.16571271]
+x = 0.21047727461806048 y = 0.18423672171997818
+Distance to obstacle 0.7963739247674133
 sim iteration 62
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.5665143728256226 y = -0.0003049891092814505
-Distance to obstacle 0.5753256678581238
+ADMM done: Total Iterations=2 converged=True rho=8.100e+02 rp=0.000e+00 (<= 1.685e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=2 converged=True rho=7.290e+02 rp=0.000e+00 (<= 1.686e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 7.290e+02
+u = [0.91371195 1.52318354]
+x = 0.22142961796556138 y = 0.20428265960370723
+Distance to obstacle 0.7884275611997735
 sim iteration 63
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.5915132761001587 y = -0.00021116327843628824
-Distance to obstacle 0.5999418497085571
+ADMM done: Total Iterations=2 converged=True rho=6.561e+02 rp=0.000e+00 (<= 1.662e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 6.561e+02
+ADMM done: Total Iterations=2 converged=True rho=5.905e+02 rp=0.000e+00 (<= 1.664e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.905e+02
+u = [0.83175914 1.66252808]
+x = 0.23069768685439196 y = 0.22289696715528529
+Distance to obstacle 0.7824612400837258
 sim iteration 64
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.6165120601654053 y = -0.00012587863602675498
-Distance to obstacle 0.624589741230011
+ADMM done: Total Iterations=2 converged=True rho=5.314e+02 rp=0.000e+00 (<= 1.628e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.314e+02
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 1.624e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.783e+02
+u = [ 0.73435712 -0.11849483]
+x = 0.23819049034534076 y = 0.23965728143941561
+Distance to obstacle 0.7783599273580938
 sim iteration 65
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.6415108442306519 y = -4.8908543249126524e-05
-Distance to obstacle 0.649265706539154
+ADMM done: Total Iterations=2 converged=True rho=8.100e+02 rp=0.000e+00 (<= 1.597e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=2 converged=True rho=7.290e+02 rp=0.000e+00 (<= 1.599e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 7.290e+02
+u = [0.991785  0.3280827]
+x = 0.24837689641990568 y = 0.26226282422391506
+Distance to obstacle 0.7734061203077274
 sim iteration 66
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.6665096282958984 y = 2.0015242625959218e-05
-Distance to obstacle 0.6739667057991028
+ADMM done: Total Iterations=2 converged=True rho=6.561e+02 rp=0.000e+00 (<= 1.575e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 6.561e+02
+ADMM done: Total Iterations=2 converged=True rho=5.905e+02 rp=0.000e+00 (<= 1.578e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.905e+02
+u = [ 1.30131661 -0.45071379]
+x = 0.2614987083503697 y = 0.29203208062927083
+Distance to obstacle 0.768337010031503
 sim iteration 67
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.6915086507797241 y = 8.120309212245047e-05
-Distance to obstacle 0.6986902356147766
+ADMM done: Total Iterations=30 converged=True rho=1.000e+03 rp=0.000e+00 (<= 1.531e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.314e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.408e-02 (<= 1.523e-04) rd=0.000e+00 (<= 5.650e-01) Rho0 9.000e+02
+ADMM done: Total Iterations=66 converged=True rho=2.500e+00 rp=1.110e-16 (<= 2.456e-04) rd=5.551e-16 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=32 converged=True rho=1.125e+01 rp=0.000e+00 (<= 2.415e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.250e+00
+u = [0.21754464 0.91810445]
+x = 0.26374825256797957 y = 0.296983655604047
+Distance to obstacle 0.7675601229845121
 sim iteration 68
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.7165077924728394 y = 0.00013499440683517605
-Distance to obstacle 0.723433792591095
+ADMM done: Total Iterations=2 converged=True rho=9.113e+00 rp=0.000e+00 (<= 1.819e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.113e+00
+ADMM done: Total Iterations=2 converged=True rho=8.201e+00 rp=0.000e+00 (<= 1.780e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.201e+00
+u = [-0.79478423  0.32888857]
+x = 0.255947045460473 y = 0.27870956461124635
+Distance to obstacle 0.7701300476068899
 sim iteration 69
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.7415069341659546 y = 0.00018175272271037102
-Distance to obstacle 0.7481952905654907
+ADMM done: Total Iterations=2 converged=True rho=6.643e+00 rp=0.000e+00 (<= 1.760e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 6.643e+00
+ADMM done: Total Iterations=2 converged=True rho=5.979e+00 rp=0.000e+00 (<= 1.822e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.979e+00
+u = [-1.64356849 -0.06954807]
+x = 0.24012585125575117 y = 0.240788420365095
+Distance to obstacle 0.7766991940599007
 sim iteration 70
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.7665061950683594 y = 0.0002218594599980861
-Distance to obstacle 0.7729731202125549
+ADMM done: Total Iterations=2 converged=True rho=4.843e+00 rp=0.000e+00 (<= 1.685e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.843e+00
+ADMM done: Total Iterations=2 converged=True rho=4.358e+00 rp=0.000e+00 (<= 1.595e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.358e+00
+u = [-2.43710259  1.72157426]
+x = 0.21656826783734068 y = 0.18459937864164933
+Distance to obstacle 0.7903836467005146
 sim iteration 71
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.7915054559707642 y = 0.0002557080006226897
-Distance to obstacle 0.7977654933929443
+ADMM done: Total Iterations=2 converged=True rho=3.530e+00 rp=0.000e+00 (<= 1.512e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.530e+00
+ADMM done: Total Iterations=2 converged=True rho=3.177e+00 rp=0.000e+00 (<= 1.580e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.177e+00
+u = [-2.0588555   0.31688783]
+x = 0.1987277102186439 y = 0.13631875904090907
+Distance to obstacle 0.8032490802928849
 sim iteration 72
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.8165048360824585 y = 0.000283709610812366
-Distance to obstacle 0.8225712776184082
+ADMM done: Total Iterations=2 converged=True rho=2.574e+00 rp=0.000e+00 (<= 1.588e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.574e+00
+ADMM done: Total Iterations=2 converged=True rho=2.316e+00 rp=0.000e+00 (<= 1.569e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.316e+00
+u = [-1.83043415  0.25450951]
+x = 0.1832070345856506 y = 0.09327036355337755
+Distance to obstacle 0.8169007595168494
 sim iteration 73
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.8415043354034424 y = 0.0003062754694838077
-Distance to obstacle 0.8473891615867615
+ADMM done: Total Iterations=2 converged=True rho=1.876e+00 rp=0.000e+00 (<= 1.463e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.876e+00
+ADMM done: Total Iterations=2 converged=True rho=1.689e+00 rp=0.000e+00 (<= 1.470e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.689e+00
+u = [-1.80373499  2.39208153]
+x = 0.16818296548434525 y = 0.05075342828906447
+Distance to obstacle 0.8323310284179372
 sim iteration 74
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.8665039539337158 y = 0.00032381684286519885
-Distance to obstacle 0.872218132019043
+ADMM done: Total Iterations=2 converged=True rho=1.368e+00 rp=0.000e+00 (<= 1.606e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.368e+00
+ADMM done: Total Iterations=152 converged=True rho=2.000e+02 rp=0.000e+00 (<= 1.679e-04) rd=4.441e-14 (<= 1.000e-04) Rho0 1.231e+00
+u = [-1.35153789  2.25896139]
+x = 0.1588495939919248 y = 0.018279633498240827
+Distance to obstacle 0.8434117672695
 sim iteration 75
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.8915035724639893 y = 0.00033673891448415816
-Distance to obstacle 0.897057056427002
+ADMM done: Total Iterations=2 converged=True rho=1.620e+02 rp=0.000e+00 (<= 1.651e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.620e+02
+ADMM done: Total Iterations=41 converged=True rho=7.290e+02 rp=0.000e+00 (<= 1.489e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.458e+02
+u = [-1.01472713  2.18861896]
+x = 0.15322949194364963 y = -0.006458169930058249
+Distance to obstacle 0.8511729016255537
 sim iteration 76
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.9165033102035522 y = 0.000345447042491287
-Distance to obstacle 0.9219052791595459
+ADMM done: Total Iterations=2 converged=True rho=5.905e+02 rp=0.000e+00 (<= 1.459e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.905e+02
+ADMM done: Total Iterations=2 converged=True rho=5.314e+02 rp=0.000e+00 (<= 1.460e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 5.314e+02
+u = [-0.65371597  2.12839777]
+x = 0.150485835499076 y = -0.022569119769532374
+Distance to obstacle 0.8556837850619816
 sim iteration 77
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.074e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.9415030479431152 y = 0.0003503345651552081
-Distance to obstacle 0.9467619061470032
+ADMM done: Total Iterations=2 converged=True rho=4.783e+02 rp=0.000e+00 (<= 1.467e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.783e+02
+ADMM done: Total Iterations=2 converged=True rho=4.305e+02 rp=0.000e+00 (<= 1.467e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.305e+02
+u = [-0.58854165  1.92430655]
+x = 0.14879064373517797 y = -0.037184680790528904
+Distance to obstacle 0.8592378120199033
 sim iteration 78
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.075e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.9665029048919678 y = 0.0003517829463817179
-Distance to obstacle 0.9716262817382812
+ADMM done: Total Iterations=2 converged=True rho=3.874e+02 rp=0.000e+00 (<= 1.476e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.874e+02
+ADMM done: Total Iterations=2 converged=True rho=3.487e+02 rp=0.000e+00 (<= 1.476e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.487e+02
+u = [-0.38998826  1.65358804]
+x = 0.14813438254931482 y = -0.046912275577709155
+Distance to obstacle 0.8612675286384303
 sim iteration 79
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.076e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 1.9915027618408203 y = 0.00035016171750612557
-Distance to obstacle 0.9964977502822876
+ADMM done: Total Iterations=2 converged=True rho=3.138e+02 rp=0.000e+00 (<= 1.485e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.138e+02
+ADMM done: Total Iterations=2 converged=True rho=2.824e+02 rp=0.000e+00 (<= 1.485e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.824e+02
+u = [-0.26210205  1.31305971]
+x = 0.14796389067443433 y = -0.05346260842217995
+Distance to obstacle 0.8624255326934028
 sim iteration 80
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.077e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.016502857208252 y = 0.0003458284481894225
-Distance to obstacle 1.0213760137557983
+ADMM done: Total Iterations=2 converged=True rho=2.542e+02 rp=0.000e+00 (<= 1.494e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.542e+02
+ADMM done: Total Iterations=2 converged=True rho=2.288e+02 rp=0.000e+00 (<= 1.494e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.288e+02
+u = [-0.15692575  0.94704905]
+x = 0.14799058509501825 y = -0.05738566135723704
+Distance to obstacle 0.8630149842460991
 sim iteration 81
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.079e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.0415029525756836 y = 0.00033912292565219104
-Distance to obstacle 1.0462603569030762
+ADMM done: Total Iterations=2 converged=True rho=2.059e+02 rp=0.000e+00 (<= 1.501e-04) rd=5.715e-15 (<= 1.000e-04) Rho0 2.059e+02
+ADMM done: Total Iterations=2 converged=True rho=1.853e+02 rp=0.000e+00 (<= 1.501e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.853e+02
+u = [-0.11580047  0.52682713]
+x = 0.14807881319196992 y = -0.060279328334027875
+Distance to obstacle 0.8633933046359861
 sim iteration 82
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.080e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.066502809524536 y = 0.0003303610428702086
-Distance to obstacle 1.0711500644683838
+ADMM done: Total Iterations=2 converged=True rho=1.668e+02 rp=0.000e+00 (<= 1.507e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.668e+02
+ADMM done: Total Iterations=2 converged=True rho=1.501e+02 rp=0.000e+00 (<= 1.506e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.501e+02
+u = [-0.08032068  0.02990709]
+x = 0.14816643791508352 y = -0.06228543260451704
+Distance to obstacle 0.8636350860321341
 sim iteration 83
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.081e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.0915029048919678 y = 0.00031984676024876535
-Distance to obstacle 1.0960450172424316
+ADMM done: Total Iterations=2 converged=True rho=1.351e+02 rp=0.000e+00 (<= 1.512e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.351e+02
+ADMM done: Total Iterations=2 converged=True rho=1.216e+02 rp=0.000e+00 (<= 1.510e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.216e+02
+u = [-0.01605376 -0.561199  ]
+x = 0.14818425132926646 y = -0.06268638119013106
+Distance to obstacle 0.8636836649263535
 sim iteration 84
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.082e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.1165030002593994 y = 0.0003078661975450814
-Distance to obstacle 1.120944857597351
+ADMM done: Total Iterations=2 converged=True rho=1.094e+02 rp=0.000e+00 (<= 1.514e-04) rd=3.037e-15 (<= 1.000e-04) Rho0 1.094e+02
+ADMM done: Total Iterations=2 converged=True rho=9.848e+01 rp=0.000e+00 (<= 1.511e-04) rd=2.733e-15 (<= 1.000e-04) Rho0 9.848e+01
+u = [-0.09002343 -1.12979367]
+x = 0.14825258887363554 y = -0.06493592930122087
+Distance to obstacle 0.8639907846515913
 sim iteration 85
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.084e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.141503095626831 y = 0.0002946816384792328
-Distance to obstacle 1.1458492279052734
+ADMM done: Total Iterations=2 converged=True rho=8.863e+01 rp=0.000e+00 (<= 1.513e-04) rd=2.460e-15 (<= 1.000e-04) Rho0 8.863e+01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=9.430e-03 (<= 1.504e-04) rd=0.000e+00 (<= 3.418e-01) Rho0 7.977e+01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 2.509e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=6.600e-03 (<= 3.134e-04) rd=0.000e+00 (<= 1.790e-01) Rho0 1.000e-01
+u = [-0.04900769 -0.2947556 ]
+x = 0.1482551913780743 y = -0.0661611187722873
+Distance to obstacle 0.8641945913133035
 sim iteration 86
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.085e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.1665031909942627 y = 0.0002805433759931475
-Distance to obstacle 1.17075777053833
+ADMM done: Total Iterations=3 converged=True rho=8.100e+02 rp=0.000e+00 (<= 3.140e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=45 converged=True rho=1.000e+03 rp=0.000e+00 (<= 3.550e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 7.290e+02
+u = [0.07325233 0.75713249]
+x = 0.14826479604903559 y = -0.0643298355917334
+Distance to obstacle 0.8638772824257667
 sim iteration 87
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.086e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.1915032863616943 y = 0.0002656779543031007
-Distance to obstacle 1.1956701278686523
+ADMM done: Total Iterations=2 converged=True rho=8.100e+02 rp=0.000e+00 (<= 3.709e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 8.100e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=1.625e+00 (<= 5.660e-04) rd=0.000e+00 (<= 6.077e+01) Rho0 7.290e+02
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 2.049e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=43 converged=True rho=5.000e-01 rp=0.000e+00 (<= 2.789e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+u = [-1.28323951 -0.74627507]
+x = 0.1487037652393716 y = -0.09640781993898176
+Distance to obstacle 0.8693819633816009
 sim iteration 88
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.087e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.216503381729126 y = 0.00025028802338056266
-Distance to obstacle 1.2205861806869507
+ADMM done: Total Iterations=2 converged=True rho=4.050e-01 rp=0.000e+00 (<= 1.960e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.050e-01
+ADMM done: Total Iterations=2 converged=True rho=3.645e-01 rp=0.000e+00 (<= 1.912e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.645e-01
+u = [-1.90498944 -0.15488185]
+x = 0.14846691446075153 y = -0.14403196706619967
+Distance to obstacle 0.880510600751373
 sim iteration 89
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.089e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.2415034770965576 y = 0.00023456427152268589
-Distance to obstacle 1.2455055713653564
+ADMM done: Total Iterations=2 converged=True rho=2.952e-01 rp=0.000e+00 (<= 1.926e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.952e-01
+ADMM done: Total Iterations=41 converged=True rho=1.329e+00 rp=0.000e+00 (<= 1.725e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.657e-01
+u = [-1.49074863 -0.15924025]
+x = 0.14813726433556929 y = -0.18129922494305534
+Distance to obstacle 0.8910372637379029
 sim iteration 90
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.090e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.2665035724639893 y = 0.00021867960458621383
-Distance to obstacle 1.27042818069458
+ADMM done: Total Iterations=2 converged=True rho=1.076e+00 rp=0.000e+00 (<= 1.737e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.076e+00
+ADMM done: Total Iterations=43 converged=True rho=4.843e+00 rp=0.000e+00 (<= 1.502e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.686e-01
+u = [-0.90236675 -0.1784873 ]
+x = 0.14784792058249402 y = -0.20385653796187228
+Distance to obstacle 0.8981857828975469
 sim iteration 91
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.091e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.291503667831421 y = 0.0002027890004683286
-Distance to obstacle 1.295353651046753
+ADMM done: Total Iterations=2 converged=True rho=3.923e+00 rp=0.000e+00 (<= 1.527e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.923e+00
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=4.737e-03 (<= 1.509e-04) rd=0.000e+00 (<= 1.709e-01) Rho0 3.530e+00
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.816e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=37 converged=True rho=5.000e-01 rp=0.000e+00 (<= 1.599e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+u = [-0.58307386 -0.1590896 ]
+x = 0.14759592092133905 y = -0.21843120597688345
+Distance to obstacle 0.9031355926607904
 sim iteration 92
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.092e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.3165037631988525 y = 0.00018702949455473572
-Distance to obstacle 1.3202821016311646
+ADMM done: Total Iterations=2 converged=True rho=4.050e-01 rp=0.000e+00 (<= 1.457e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.050e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=9.658e-03 (<= 1.480e-04) rd=0.000e+00 (<= 2.794e-01) Rho0 3.645e-01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.929e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=36 converged=True rho=5.000e-01 rp=0.000e+00 (<= 1.161e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+u = [-0.5320389  -0.12729253]
+x = 0.14731308684625474 y = -0.2317291710047906
+Distance to obstacle 0.9078821773330483
 sim iteration 93
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.094e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.341503858566284 y = 0.0001715203543426469
-Distance to obstacle 1.3452130556106567
+ADMM done: Total Iterations=2 converged=True rho=4.050e-01 rp=0.000e+00 (<= 1.262e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.050e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=9.101e-03 (<= 1.549e-04) rd=0.000e+00 (<= 2.641e-01) Rho0 3.645e-01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 2.023e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=34 converged=True rho=5.000e-01 rp=0.000e+00 (<= 1.258e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+u = [-0.578041   -0.10110332]
+x = 0.14695982220871956 y = -0.24617587745468522
+Distance to obstacle 0.9132733697855824
 sim iteration 94
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.095e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.366503953933716 y = 0.00015636881289537996
-Distance to obstacle 1.370146632194519
+ADMM done: Total Iterations=2 converged=True rho=4.050e-01 rp=0.000e+00 (<= 1.222e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.050e-01
+ADMM done: Total Iterations=2 converged=True rho=3.645e-01 rp=0.000e+00 (<= 1.637e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 3.645e-01
+u = [-0.41890259  0.07826453]
+x = 0.14667735207726645 y = -0.2566446321558356
+Distance to obstacle 0.9173271770841652
 sim iteration 95
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.096e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.3915040493011475 y = 0.0001416643353877589
-Distance to obstacle 1.3950824737548828
+ADMM done: Total Iterations=2 converged=True rho=2.952e-01 rp=0.000e+00 (<= 1.820e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.952e-01
+ADMM done: Total Iterations=34 converged=True rho=1.329e+00 rp=0.000e+00 (<= 1.227e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 2.657e-01
+u = [-0.45532941 -0.05467064]
+x = 0.14639258404602848 y = -0.2680243048490929
+Distance to obstacle 0.9218278241284057
 sim iteration 96
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.097e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.416504144668579 y = 0.00012747840082738549
-Distance to obstacle 1.420020580291748
+ADMM done: Total Iterations=2 converged=True rho=1.076e+00 rp=0.000e+00 (<= 1.117e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.076e+00
+ADMM done: Total Iterations=2 converged=True rho=9.686e-01 rp=0.000e+00 (<= 1.152e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 9.686e-01
+u = [-4.22271225e-01 -1.41154007e-04]
+x = 0.14611406708518332 y = -0.2785774108203113
+Distance to obstacle 0.9261203733750841
 sim iteration 97
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.099e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.4415042400360107 y = 0.00011387660924810916
-Distance to obstacle 1.4449608325958252
+ADMM done: Total Iterations=2 converged=True rho=7.845e-01 rp=0.000e+00 (<= 1.310e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 7.845e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=5.331e-03 (<= 1.451e-04) rd=0.000e+00 (<= 1.748e-01) Rho0 7.061e-01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.863e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=36 converged=True rho=5.000e-01 rp=0.000e+00 (<= 1.148e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+u = [-0.42494667 -0.05666754]
+x = 0.14583374800819265 y = -0.2891973786299782
+Distance to obstacle 0.9305410740149944
 sim iteration 98
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.100e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.4665043354034424 y = 0.0001009125990094617
-Distance to obstacle 1.4699029922485352
+ADMM done: Total Iterations=2 converged=True rho=4.050e-01 rp=0.000e+00 (<= 1.282e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.050e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=9.805e-03 (<= 1.508e-04) rd=0.000e+00 (<= 2.836e-01) Rho0 3.645e-01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.924e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=35 converged=True rho=5.000e-01 rp=0.000e+00 (<= 1.135e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+u = [-0.43854696 -0.06243921]
+x = 0.14552893099830524 y = -0.3001568143721383
+Distance to obstacle 0.9352219048303303
 sim iteration 99
-ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.101e-03) rd=0.000e+00 (<= 1.000e-03) Rho0 1.000e-01
-x = 2.491504430770874 y = 8.862803224474192e-05
-Distance to obstacle 1.494847059249878
-Total time (ms): 21.468125579413027
-Min time (ms): 2.19327793456614
+ADMM done: Total Iterations=2 converged=True rho=4.050e-01 rp=0.000e+00 (<= 1.280e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 4.050e-01
+ADMM done: Total Iterations=399 converged=False rho=1.000e+03 rp=9.615e-03 (<= 1.566e-04) rd=0.000e+00 (<= 2.789e-01) Rho0 3.645e-01
+ADMM done: Total Iterations=2 converged=True rho=1.000e-01 rp=0.000e+00 (<= 1.994e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+ADMM done: Total Iterations=34 converged=True rho=5.000e-01 rp=0.000e+00 (<= 1.183e-04) rd=0.000e+00 (<= 1.000e-04) Rho0 1.000e-01
+u = [-0.47405579 -0.05548631]
+x = 0.14518094093712197 y = -0.312003099114103
+Distance to obstacle 0.9404158938747289
+Average Time (ms): 91.1741330078803
+Min time (ms): 6.5746009349823
+Saved replay to replay.mp4

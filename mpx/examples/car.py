@@ -16,17 +16,18 @@ Assumptions (matches your mpc() usage):
 
 from __future__ import annotations
 from functools import partial
+from jax import config
+config.update("jax_enable_x64", True)
+
 from dataclasses import dataclass
 from typing import Any, Callable
 
 import time
 import jax
 import jax.numpy as jnp
-from jax import config
-config.update("jax_enable_x64", True)
 
 from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMConfig
-from mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers import SLSConfig
+from mpx.primal_dual_ilqr.primal_dual_ilqr.fast_sls import SLSConfig
 from mpx.utils.generic_mpc_wrapper import GenericMPCControllerWrapper
 from mpx.utils.mpc_utils import outside_circle_constraints, combine_constraints
 
@@ -86,7 +87,7 @@ def dubins_step_with_disturbance(
     # n = jnp.asarray(x.shape[0], dtype=x.dtype)  # n = 3, but keep generic
     # r = jax.random.uniform(key_rad, (), minval=0.0, maxval=1.0, dtype=x.dtype) ** (1.0 / n)
     # w = r * z  # ||w||_2 <= 1
-    w = jnp.array([0.6, 0.6, 0])
+    w = jnp.array([0.7, 0.3, 0])
 
     # Additive disturbance
     x_next = x_nom + E @ w
@@ -102,26 +103,33 @@ def dynamics(x: jnp.ndarray, u: jnp.ndarray, t: jnp.ndarray, *, parameter: Any) 
 # -----------------------------
 # Cost and Constraints matching your mpc() expectations
 # -----------------------------
-def cost(W: jnp.ndarray, reference: jnp.ndarray, x: jnp.ndarray, u: jnp.ndarray, t: jnp.ndarray) -> jnp.ndarray:
+def cost(W, reference, x, u, t):
     """
-    Stage cost: quadratic tracking to reference[t], with theta wrapping.
-    W = [wpos, wtheta, wv, womega]
-    reference[t] = [px_ref, py_ref, theta_ref]
+    W = [wx, wy, wtheta, wv, womega]
     """
-    wpos, wtheta, wv, womega = W
+    wx, wy, wtheta, wv, womega = W
     xref = reference[t]
 
-    dp = x[:2] - xref[:2]
-    dth = wrap_to_pi(x[2] - xref[2])
+    dx = x[0] - xref[0]
+    dy = x[1] - xref[1]
+    # dth = wrap_to_pi(x[2] - xref[2])
+
+    dth = jnp.arctan2(
+        jnp.sin(x[2] - xref[2]),
+        jnp.cos(x[2] - xref[2]),
+    )
+
 
     v, om = u[0], u[1]
 
     return (
-        wpos * jnp.dot(dp, dp)
+        wx * (dx * dx)
+        + wy * (dy * dy)
         + wtheta * (dth * dth)
         + wv * (v * v)
         + womega * (om * om)
     )
+
 
 def make_control_box_constraints(u_min: jnp.ndarray, u_max: jnp.ndarray) -> Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray]:
     """
@@ -160,6 +168,7 @@ def make_constant_disturbance(
     def disturbance(X_prefix: jnp.ndarray) -> jnp.ndarray:
         T = X_prefix.shape[0]
         E0 = alpha * jnp.eye(n, n, dtype=X_prefix.dtype)  # (n, nc)
+        E0 = E0.at[2, 2].set(0.0)
         return jnp.broadcast_to(E0, (T, n, n))
 
     return disturbance
@@ -189,7 +198,7 @@ def build_forward_reference(
       X_ref: (N+1, 3)
       U_ref: (N, 2)
     """
-    v_ref: float = 0.5
+    v_ref: float = 1.0
     om_ref: float = 0.0
     u = jnp.array([v_ref, om_ref], dtype=x0.dtype)
     U_ref = jnp.broadcast_to(u, (N, 2))
@@ -215,11 +224,11 @@ def main():
     nu = 2     # [v, omega]
 
     # Horizon and dt
-    N = 25
-    dt = 0.05
+    N = 50
+    dt = 0.025
 
-    # Weights: (pos, theta, v, omega)
-    W = jnp.array([10.0, 2.0, 0.1, 0.1])
+    # Weights: (x, y, theta, v, omega)
+    W = jnp.array([5.0, 0.1, 0.1, 0.1, 0.1])
 
     cfg = MPCConfig(
         n=n,
@@ -230,15 +239,15 @@ def main():
     )
 
     admm_cfg = ADMMConfig(
-        eps_abs=1e-5,
-        eps_rel=1e-5,
+        eps_abs=1e-4,
+        eps_rel=1e-4,
         condense_block_size=5,
-        rho_max=1e10,
+        rho_max=1e3,
         max_iterations=400,
     )
 
     sls_cfg = SLSConfig(
-        max_sls_iterations=1,
+        max_sls_iterations=2,
         sls_primal_tol=1e-2
     )
 
@@ -251,8 +260,8 @@ def main():
     u_max = jnp.array([v_max,  om_max])
 
     constraints_u = make_control_box_constraints(u_min, u_max)
-    centers = jnp.array([[1.0, 0.05]])   # (K,2)
-    radii   = jnp.array([0.1])         # (K,)
+    centers = jnp.array([[1.0, 0.08]])   # (K,2)
+    radii   = jnp.array([0.2])         # (K,)
     K = centers.shape[0]
 
     # Inflate a bit if you want “safety margin”
@@ -293,7 +302,7 @@ def main():
     X_ref, U_ref = build_forward_reference(x, N, dt)
     reference = X_ref
     # Closed-loop rollout
-    T_steps = min(int(5.0 / dt), 400)  # simulate ~5s (cap)
+    T_steps = min(int(5.0 / dt), 100)  # simulate ~5s (cap)
     xs = []
     us = []
 
@@ -305,6 +314,7 @@ def main():
 
     key = jax.random.PRNGKey(0)
     E_sim = alpha_sim * jnp.eye(3)
+    E_sim = E_sim.at[2, 2].set(0)
 
     for k in range(T_steps):
         print(f"sim iteration {k}")
@@ -313,18 +323,23 @@ def main():
         start = time.perf_counter()
         u0, X_pred, U_pred, V_pred = controller.run(x0=x, reference=reference, parameter=parameter)
         u0.block_until_ready()
+        u0 = jnp.clip(u0, u_min * 2, u_max * 2)
         end = time.perf_counter()
-
+        jax.debug.print("u = {}", u0)
         dt_run = end - start
         total_time += dt_run
         min_time = min(min_time, dt_run)
 
         # apply
-        x = dubins_step(x, u0, dt)
         # key, x = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
+        x = dubins_step(x, u0, dt)
+        # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
         jax.debug.print("x = {} y = {}", x[0], x[1])
         # jax.debug.print("x_disturb = {} y_disturb = {}", x_disturb[0], x_disturb[1])
         jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)
+        if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
+            jax.debug.print("Crashed!")
+            break
         xs.append(x)
         us.append(u0)
 
@@ -332,6 +347,92 @@ def main():
     us = jnp.stack(us, axis=0)
     print("Average Time (ms):", total_time / T_steps* 1000)
     print("Min time (ms):", min_time * 1000)
+    save_replay(
+        xs=xs,
+        centers=centers,
+        radii=radii,
+        filename="replay.mp4",
+        dt=dt,
+    )
+
+    print("Saved replay to replay.mp4")
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import animation
+
+def save_replay(
+    xs,
+    centers,
+    radii,
+    filename: str = "replay.mp4",
+    dt: float = 0.1,
+):
+    xs = np.asarray(xs)
+    centers = np.asarray(centers)
+    radii = np.asarray(radii)
+
+    T = xs.shape[0]
+    if T == 0:
+        raise ValueError("xs is empty; nothing to replay.")
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.set_aspect("equal")
+
+    for c, r in zip(centers, radii):
+        ax.add_patch(plt.Circle((float(c[0]), float(c[1])), float(r), color="red", alpha=0.4))
+
+    margin = 0.5
+    xmin, xmax = xs[:, 0].min() - margin, xs[:, 0].max() + margin
+    ymin, ymax = xs[:, 1].min() - margin, xs[:, 1].max() + margin
+    ax.set_xlim(float(xmin), float(xmax))
+    ax.set_ylim(float(ymin), float(ymax))
+
+    traj_line, = ax.plot([], [], "b-", lw=2, alpha=0.7)
+    car_dot, = ax.plot([], [], "bo", markersize=8)
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_title("Dubins Car MPC Replay")
+
+    def init():
+        traj_line.set_data([], [])
+        car_dot.set_data([], [])
+        return traj_line, car_dot
+
+    def update(k: int):
+        traj_line.set_data(xs[:k+1, 0], xs[:k+1, 1])
+        car_dot.set_data([xs[k, 0]], [xs[k, 1]])  # sequences
+        return traj_line, car_dot
+
+    ani = animation.FuncAnimation(
+        fig, update, frames=T, init_func=init, interval=dt * 1000.0, blit=True
+    )
+
+    fps = max(1, int(round(1.0 / dt)))
+
+    # --- Writer selection ---
+    ext = filename.lower().split(".")[-1]
+
+    if ext == "mp4":
+        # Force ffmpeg writer if available
+        if animation.FFMpegWriter.isAvailable():
+            writer = animation.FFMpegWriter(fps=fps)
+            ani.save(filename, writer=writer)
+        else:
+            raise RuntimeError(
+                "Requested .mp4 but Matplotlib cannot find ffmpeg. "
+                "Install ffmpeg or save as .gif instead."
+            )
+    elif ext == "gif":
+        # Pillow works for GIF
+        writer = animation.PillowWriter(fps=fps)
+        ani.save(filename, writer=writer)
+    else:
+        raise ValueError(f"Unsupported extension .{ext}. Use .mp4 or .gif.")
+
+    plt.close(fig)
 
 
 if __name__ == "__main__":

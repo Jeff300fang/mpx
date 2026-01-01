@@ -21,6 +21,7 @@ import mpx.config.config_aliengo as config
 from timeit import default_timer as timer
 from mpx.utils.render_obstacles import render_static_vertical_cylinder
 from mpx.utils.mpc_utils import outside_circle_constraints, combine_constraints
+from mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers import SLSConfig
 # Set GPU device for JAX
 # gpu_device = jax.devices('gpu')[0]
 # jax.default_device(gpu_device)
@@ -185,7 +186,11 @@ cfg = ADMMConfig(
         condense_block_size=5,
         rho_max=1e5
     )
-mpc = mpc_wrapper.MPCControllerWrapper(cfg, config, obstacle_cosntraints, num_constraints, disturbance)
+sls_config = SLSConfig(
+    max_sls_iterations = 1,
+    sls_primal_tol = 1e-2
+)
+mpc = mpc_wrapper.MPCControllerWrapper(config, sls_config, cfg, obstacle_cosntraints, num_constraints, disturbance)
 env.mjData.qpos = jnp.concatenate([config.p0, config.quat0,config.q0])
 env.render()
 ids = []

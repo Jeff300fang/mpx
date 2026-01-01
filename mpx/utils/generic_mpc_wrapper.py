@@ -101,14 +101,14 @@ class GenericMPCControllerWrapper:
         # Warm-start ADMM-ish states
         # TODO: Make this an option to warm start / not warm
         s = self.shift
-        self.w = jnp.zeros_like(w)
-        self.y = jnp.zeros_like(y)
-        # self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
-        # self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
+        # self.w = jnp.zeros_like(w)
+        # self.y = jnp.zeros_like(y)
+        self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
+        self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
 
         # rho management (matches your earlier wrapper pattern)
         rho = jnp.asarray(rho, dtype=self.rho.dtype)
-        self.rho = jnp.maximum(jnp.minimum(rho, 0.1) * 0.9, 0.1)
+        self.rho = jnp.maximum(jnp.minimum(rho, 1e3) * 0.9, 0.1)
         self.y = rho / self.rho * self.y
 
         self.U0, self.X0, self.V0 = self._update_and_extract(U, X, V, x0)
