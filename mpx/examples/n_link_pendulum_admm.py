@@ -242,11 +242,11 @@ class MPCConfig:
 # -----------------------------
 def main():
     # Problem setup
-    nlinks = 10
+    nlinks = 2
     n = 2 * nlinks
     nu = nlinks
 
-    N = 100
+    N = 10
     dt = min(0.5 / N, 0.005)
 
     # Weights: (q, qd, u)
@@ -261,25 +261,30 @@ def main():
     )
 
     sls_cfg = SLSConfig(
-        max_sls_iterations=1,
-        sls_primal_tol=1e-2,
         enable_fastsls=False
     )
 
     admm_cfg = ADMMConfig(
         eps_abs=1e-2,
         eps_rel=1e-2,
-        condense_block_size=5,
-        rho_max=1e10,
+        rho_max=1e15,
         max_iterations=400
     )
 
     # Pendulum parameters
+    L = 1.0      # total length
+    M = 1.0      # total mass
+
+    l = (L / nlinks) * jnp.ones((nlinks,))
+    m = (M / nlinks) * jnp.ones((nlinks,))
+    lc = 0.5 * l
+    I = (1.0 / 12.0) * m * l**2
+
     p = NLinkParams(
-        l=jnp.ones((nlinks,)),
-        m=jnp.ones((nlinks,)),
-        I=(1.0 / 12.0) * jnp.ones((nlinks,)),
-        lc=0.5 * jnp.ones((nlinks,)),
+        l=l,
+        m=m,
+        I=I,
+        lc=lc,
         g=9.81,
         b=0.05,
     )
@@ -299,7 +304,10 @@ def main():
     reference = jnp.tile(x_ref[None, :], (N + 1, 1))
 
     # Torque bounds
-    u_max = (3.0) * jnp.ones((nu,))
+    max_u = 0.5 * nlinks
+    print("Max_u:", max_u)
+    u_max = (0.5) * jnp.ones((nu,))
+    # u_max = (0.3 * nlinks) * jnp.ones((nu,))
     u_min = -u_max
     constraints_torque = make_torque_box_constraints(u_min, u_max)
     nc = 2 * nu
@@ -336,8 +344,9 @@ def main():
 
     total_time = 0.0
     min_time = float("inf")
+    # max_amp = 5.0
     max_amp = 0.525 * N ** 0.488
-    # max_amp = 5
+    # max_amp = 0.0
     print("MAX:", max_amp)
     # Compilation warmup
     _ = controller.run(x0=x, reference=reference, parameter=parameter)
@@ -389,7 +398,6 @@ def main():
     print("Min run time (ms):", min_time * 1000.0)
     print("Near constraint: ", near_constraint)
     print("Percentage:", near_constraint / T_steps)
-    print(us)
     print(jnp.argmax(us))
     print(us.shape)
 
