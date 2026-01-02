@@ -87,7 +87,7 @@ def dubins_step_with_disturbance(
     n = jnp.asarray(x.shape[0], dtype=x.dtype)  # n = 3, but keep generic
     r = jax.random.uniform(key_rad, (), minval=0.0, maxval=1.0, dtype=x.dtype) ** (1.0 / n)
     w = r * z  # ||w||_2 <= 1
-    w = jnp.array([0.707, 0.707, 0])
+    # w = jnp.array([0.2, 0.96, 0])
 
     # Additive disturbance
     x_next = x_nom + E @ w
@@ -248,7 +248,7 @@ def main():
     )
 
     sls_cfg = SLSConfig(
-        max_sls_iterations=1,
+        max_sls_iterations=2,
         sls_primal_tol=1e-2
     )
 
@@ -332,9 +332,9 @@ def main():
         min_time = min(min_time, dt_run)
 
         # apply
-        # key, x = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
+        key, x = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
         # x = dubins_step(x, u0, dt)
-        key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
+        # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
         jax.debug.print("x = {} y = {}", x[0], x[1])
         # jax.debug.print("x_disturb = {} y_disturb = {}", x_disturb[0], x_disturb[1])
         jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)

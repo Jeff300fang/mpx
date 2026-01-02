@@ -242,13 +242,14 @@ class MPCConfig:
 # -----------------------------
 def main():
     # Problem setup
-    nlinks = 2
+    nlinks = 15
     n = 2 * nlinks
     nu = nlinks
 
-    N = 10
+    N = 1000
     dt = min(0.5 / N, 0.005)
-
+    MAX_U_FIRST = 3.1
+    MAX_U = 3.1
     # Weights: (q, qd, u)
     W = jnp.array([50.0, 5.0, 0.1])
 
@@ -272,8 +273,8 @@ def main():
     )
 
     # Pendulum parameters
-    L = 1.0      # total length
-    M = 1.0      # total mass
+    L = 1.0 * nlinks    # total length
+    M = 1.0 * nlinks      # total mass
 
     l = (L / nlinks) * jnp.ones((nlinks,))
     m = (M / nlinks) * jnp.ones((nlinks,))
@@ -306,7 +307,7 @@ def main():
     # Torque bounds
     max_u = 0.5 * nlinks
     print("Max_u:", max_u)
-    u_max = (0.5) * jnp.ones((nu,))
+    u_max = (MAX_U_FIRST) * jnp.ones((nu,))
     # u_max = (0.3 * nlinks) * jnp.ones((nu,))
     u_min = -u_max
     constraints_torque = make_torque_box_constraints(u_min, u_max)
@@ -333,6 +334,17 @@ def main():
     # -----------------------------
     q0 = q_ref   # small perturbation around upright
     qd0 = jnp.zeros((nlinks,))
+    q_eps  = 0.05   # radians
+    qd_eps = 0.0   # rad/s
+
+    key_ic = jax.random.PRNGKey(42)
+    key_ic, kq, kqd = jax.random.split(key_ic, 3)
+
+    dq0  = jax.random.uniform(kq,  (nlinks,), minval=-q_eps,  maxval= q_eps,  dtype=q_ref.dtype)
+    dqd0 = jax.random.uniform(kqd, (nlinks,), minval=-qd_eps, maxval= qd_eps, dtype=q_ref.dtype)
+
+    q0  = wrap_to_pi(q_ref + dq0)
+    qd0 = qd_ref + dqd0
     x = jnp.concatenate([q0, qd0], axis=0)
     # jax.debug.print("{}", x)
 
@@ -346,11 +358,12 @@ def main():
     min_time = float("inf")
     # max_amp = 5.0
     max_amp = 0.525 * N ** 0.488
+    max_amp = 0
     # max_amp = 0.0
     print("MAX:", max_amp)
     # Compilation warmup
-    _ = controller.run(x0=x, reference=reference, parameter=parameter)
-
+    u0, X_pred, U_pred, V_pred = controller.run(x0=x, reference=reference, parameter=parameter)
+    print("First {}", u0)
     tau_disturb = make_random_periodic_pushes(
         nu=nu,
         dt=dt,
@@ -362,6 +375,11 @@ def main():
     key = jax.random.PRNGKey(0)
     near_constraint = 0
     alpha = 0.9
+    u_max = (MAX_U) * jnp.ones((nu,))
+    # u_max = (0.3 * nlinks) * jnp.ones((nu,))
+    u_min = -u_max
+    constraints_torque = make_torque_box_constraints(u_min, u_max)
+    controller.constraints = constraints_torque
     for k in range(T_steps):
         print(f"sim iteration {k}")
         start = time.perf_counter()

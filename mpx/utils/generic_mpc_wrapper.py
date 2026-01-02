@@ -109,8 +109,8 @@ class GenericMPCControllerWrapper:
 
         # rho management (matches your earlier wrapper pattern)
         rho = jnp.asarray(rho, dtype=self.rho.dtype)
-        self.rho = jnp.maximum(jnp.minimum(rho, 1e3) * 0.9, 0.1) # car
-        # self.rho = jnp.maximum(jnp.minimum(rho, 0.1) * 0.9, 0.1) # pendulum 
+        # self.rho = jnp.maximum(jnp.minimum(rho, 1e3) * 0.9, 0.1) # car
+        self.rho = jnp.maximum(jnp.minimum(rho, 0.1) * 0.9, 0.1) # pendulum 
         self.y = rho / self.rho * self.y
 
         self.U0, self.X0, self.V0 = self._update_and_extract(U, X, V, x0)
