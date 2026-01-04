@@ -242,14 +242,14 @@ class MPCConfig:
 # -----------------------------
 def main():
     # Problem setup
-    nlinks = 15
+    nlinks = 25
     n = 2 * nlinks
     nu = nlinks
 
-    N = 1000
+    N = 10
     dt = min(0.5 / N, 0.005)
-    MAX_U_FIRST = 3.1
-    MAX_U = 3.1
+    MAX_U = 2.0
+    # MAX_U = 5.0 # N = 10
     # Weights: (q, qd, u)
     W = jnp.array([50.0, 5.0, 0.1])
 
@@ -307,7 +307,7 @@ def main():
     # Torque bounds
     max_u = 0.5 * nlinks
     print("Max_u:", max_u)
-    u_max = (MAX_U_FIRST) * jnp.ones((nu,))
+    u_max = (MAX_U) * jnp.ones((nu,))
     # u_max = (0.3 * nlinks) * jnp.ones((nu,))
     u_min = -u_max
     constraints_torque = make_torque_box_constraints(u_min, u_max)
@@ -334,7 +334,7 @@ def main():
     # -----------------------------
     q0 = q_ref   # small perturbation around upright
     qd0 = jnp.zeros((nlinks,))
-    q_eps  = 0.05   # radians
+    q_eps  = 0.1   # radians
     qd_eps = 0.0   # rad/s
 
     key_ic = jax.random.PRNGKey(42)
@@ -375,11 +375,6 @@ def main():
     key = jax.random.PRNGKey(0)
     near_constraint = 0
     alpha = 0.9
-    u_max = (MAX_U) * jnp.ones((nu,))
-    # u_max = (0.3 * nlinks) * jnp.ones((nu,))
-    u_min = -u_max
-    constraints_torque = make_torque_box_constraints(u_min, u_max)
-    controller.constraints = constraints_torque
     for k in range(T_steps):
         print(f"sim iteration {k}")
         start = time.perf_counter()
@@ -420,4 +415,6 @@ def main():
     print(us.shape)
 
 if __name__ == "__main__":
+    print("JAX backend:", jax.default_backend())
+    print("JAX devices:", jax.devices())
     main()

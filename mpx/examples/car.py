@@ -86,8 +86,8 @@ def dubins_step_with_disturbance(
 
     n = jnp.asarray(x.shape[0], dtype=x.dtype)  # n = 3, but keep generic
     r = jax.random.uniform(key_rad, (), minval=0.0, maxval=1.0, dtype=x.dtype) ** (1.0 / n)
-    w = r * z  # ||w||_2 <= 1
-    # w = jnp.array([0.2, 0.96, 0])
+    # w = r * z  # ||w||_2 <= 1
+    w = jnp.array([0.2, 0.96, 0])
 
     # Additive disturbance
     x_next = x_nom + E @ w
@@ -198,7 +198,7 @@ def build_forward_reference(
       X_ref: (N+1, 3)
       U_ref: (N, 2)
     """
-    v_ref: float = 1.0
+    v_ref: float = 1.5
     om_ref: float = 0.0
     u = jnp.array([v_ref, om_ref], dtype=x0.dtype)
     U_ref = jnp.broadcast_to(u, (N, 2))
@@ -243,12 +243,12 @@ def main():
     admm_cfg = ADMMConfig(
         eps_abs=5e-2,
         eps_rel=5e-2,
-        rho_max=1e3,
-        max_iterations=400,
+        rho_max=1e10,
+        max_iterations=10000,
     )
 
     sls_cfg = SLSConfig(
-        max_sls_iterations=2,
+        max_sls_iterations=5,
         sls_primal_tol=1e-2
     )
 
@@ -280,7 +280,7 @@ def main():
     nc = 2 * nu + K
 
     # disturbance = make_zero_disturbance(n=n)
-    alpha_sim = 0.001
+    alpha_sim = 0.003
     disturbance = make_constant_disturbance(n=n, alpha=alpha_sim)
 
     controller = GenericMPCControllerWrapper(
@@ -322,22 +322,26 @@ def main():
         X_ref, U_ref = build_forward_reference(x, N, dt)
         reference = X_ref  # your cost() expects (N+1, 3)
         start = time.perf_counter()
-        u0, X_pred, U_pred, V_pred = controller.run(x0=x, reference=reference, parameter=parameter)
+        u0, X_pred, U_pred, V_pred, backoffs = controller.run(x0=x, reference=reference, parameter=parameter)
         u0.block_until_ready()
         u0 = jnp.clip(u0, u_min * 2, u_max * 2)
         end = time.perf_counter()
+        # lower = X_pred - backoffs
+        # upper = X_pred + backoffs
+        
         jax.debug.print("u = {}", u0)
         dt_run = end - start
         total_time += dt_run
         min_time = min(min_time, dt_run)
 
         # apply
-        key, x = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-        # x = dubins_step(x, u0, dt)
+        # key, x = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
+        x = dubins_step(x, u0, dt)
         # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
         jax.debug.print("x = {} y = {}", x[0], x[1])
         # jax.debug.print("x_disturb = {} y_disturb = {}", x_disturb[0], x_disturb[1])
         jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)
+        # if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
         if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
             jax.debug.print("Crashed!")
             break
