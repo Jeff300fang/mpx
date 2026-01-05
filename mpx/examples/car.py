@@ -169,7 +169,7 @@ def make_constant_disturbance(
         T = X_prefix.shape[0]
         E0 = alpha * jnp.eye(n, n, dtype=X_prefix.dtype)  # (n, nc)
         E0 = E0.at[2, 2].set(0.0)
-        return jnp.broadcast_to(E0, (T, n, n))
+        return jnp.broadcast_to(E0, (T + 1, n, n))
 
     return disturbance
 
@@ -248,7 +248,7 @@ def main():
     )
 
     sls_cfg = SLSConfig(
-        max_sls_iterations=5,
+        max_sls_iterations=2,
         sls_primal_tol=1e-2
     )
 
@@ -304,6 +304,7 @@ def main():
     reference = X_ref
     # Closed-loop rollout
     T_steps = min(int(5.0 / dt), 100)  # simulate ~5s (cap)
+    # T_steps = 6
     xs = []
     us = []
 

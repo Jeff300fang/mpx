@@ -3,6 +3,9 @@ from __future__ import annotations
 import numpy as np
 import jax
 import jax.numpy as jnp
+import jax.random as jr
+from jax import config
+config.update("jax_enable_x64", False)
 
 from mpx.primal_dual_ilqr.primal_dual_ilqr.fast_sls import fast_sls_solve_gpu, SLSConfig
 from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMConfig
@@ -66,16 +69,21 @@ def make_box_constraints(T: int, px_max, py_max, vx_max, vy_max, ux_max, uy_max,
     C = jnp.broadcast_to(C_stage, (T + 1, nc, nx)).astype(dtype)
     D = jnp.broadcast_to(D_stage, (T + 1, nc, nu)).astype(dtype)
     f = jnp.broadcast_to(f_stage, (T + 1, nc)).astype(dtype)
+
+    # C_stage = C_stage.at[12, 0].set(- 1 / 4.0)   # -1 / 4 * px
+    # C_stage = C_stage.at[12, 1].set( 1.0)   # +1 * py
+    # f_stage = f_stage.at[12].set(0.5)
     return C, D, f
 
 
 def make_quadratic_cost(T: int, x_ref: jnp.ndarray, dtype=jnp.float32):
     nx, nu = 4, 2
     w_p = 100.0
+    w_y = 100.0
     w_v = 1.0
     w_u = 0.1
 
-    Qk = jnp.diag(jnp.array([w_p, w_p, w_v, w_v], dtype=dtype))
+    Qk = jnp.diag(jnp.array([w_p, w_y, w_v, w_v], dtype=dtype))
     Rk = w_u * jnp.eye(nu, dtype=dtype)
 
     Q = jnp.broadcast_to(Qk, (T + 1, nx, nx)).astype(dtype)
@@ -100,9 +108,50 @@ def build_ltv_dynamics(T: int, dt: float, dtype=jnp.float32):
 def build_disturbance_scale(T: int, sigma: float, dtype=jnp.float32):
     nx = 4
     E0 = sigma * jnp.eye(nx, dtype=dtype)
-    E = jnp.broadcast_to(E0, (T, nx, nx)).astype(dtype)
+    E = jnp.broadcast_to(E0, (T + 1, nx, nx)).astype(dtype)
     return E
 
+
+def sample_unit_ball(key: jax.Array, dim: int, dtype=jnp.float32) -> jnp.ndarray:
+    """
+    Sample w uniformly-ish in the unit 2-ball:
+      w = r * v, where v is unit direction, r ~ U[0,1].
+    This ensures ||w||_2 <= 1.
+    """
+    k1, k2 = jr.split(key, 2)
+    v = jr.normal(k1, (dim,), dtype=dtype)
+    v_norm = jnp.linalg.norm(v) + jnp.array(1e-12, dtype=dtype)
+    v = v / v_norm
+    r = jr.uniform(k2, (), minval=0.0, maxval=1.0, dtype=dtype)
+    return r * v
+    w = jnp.array([0.0, 1.0, 0.0, 0.0])
+    return w
+
+
+def step_with_disturbance(
+    x: jnp.ndarray,
+    u: jnp.ndarray,
+    dt: float,
+    E_k: jnp.ndarray,
+    key: jax.Array,
+) -> tuple[jnp.ndarray, jax.Array, jnp.ndarray]:
+    """
+    Disturbed step consistent with Leeman et al. (fast-SLS) Eq. (1):
+        x_{k+1} = A x_k + B u_k + E w_k,  ||w_k||_2 <= 1.
+
+    Here, A,B correspond to your double integrator discretization and are
+    embedded via `step_double_integrator`, i.e. x_{k+1} = f(x_k,u_k) + E_k w_k.
+
+    Returns:
+        x_next: next state
+        key:    advanced PRNG key
+        w:      realized disturbance in unit ball (before scaling)
+    """
+    key, subkey = jr.split(key, 2)
+    w = sample_unit_ball(subkey, dim=x.shape[0], dtype=x.dtype)  # ||w||_2 <= 1
+    x_nom = step_double_integrator(x, u, dt)
+    x_next = x_nom + E_k @ w
+    return x_next, key, w
 
 # -----------------------------
 # Dynamics stepping for MPC sim
@@ -151,7 +200,8 @@ def run_mpc_loop_with_plans(
     plans_xy = []
     lowers_xy = []
     uppers_xy = []
-
+    key = jax.random.PRNGKey(0)
+    zero_u = jnp.zeros((nu,), dtype=dtype)
     for t in range(n_steps):
         x_cur = x_hist[-1]
 
@@ -178,17 +228,47 @@ def run_mpc_loop_with_plans(
 
         # Tube bounds (xy only). Assumes h_ct has at least 2 dims and aligned with xN over time.
         # If h_ct is [T+1, nx], this is correct. If it's [T+1, nc], you must map it appropriately.
-        h_xy = h_ct[:, :2]
-        # jax.debug.print("h_xy: {}", h_xy)
+        # h_xy = h_ct[:, :2]
+        h_x = jnp.max(h_ct[:, 0:2], axis=1)   # (T+1,)
+        h_y = jnp.max(h_ct[:, 2:4], axis=1)   # (T+1,)
+
+        # stack into xy tube radius
+        h_xy = jnp.stack([h_x, h_y], axis=1)  # (T+1, 2)
+
+        # tube bounds
+        lower = xN[:, :2] - h_xy
+        upper = xN[:, :2] + h_xy
+        # jax.debug.print("h_x: {}", h_xy[:, 0])
         lower = xN[:, :2] - h_xy
         upper = xN[:, :2] + h_xy
 
-        plans_xy.append(xN[:, 0:2])
+        if converged_admm:
+            # Tube bounds (xy only). Assumes h_ct is aligned with xN over time.
+            h_xy = h_ct[:, :2]
+            plan_xy = xN[:, :2]
+            lower = plan_xy - h_xy
+            upper = plan_xy + h_xy
+            u0 = uN[0]
+        else:
+            # Fallback: disregard plan; replace it with current position repeated
+            plan_xy = jnp.broadcast_to(x_cur[:2], (T + 1, 2)).astype(dtype)
+
+            # Degenerate "tube": exactly at the plan (no spread).
+            # If you prefer a visible tube, set a small epsilon instead.
+            lower = plan_xy
+            upper = plan_xy
+
+            # Safe fallback control
+            u0 = zero_u
+
+        plans_xy.append(plan_xy)
         lowers_xy.append(lower)
         uppers_xy.append(upper)
 
         u0 = uN[0]
-        x_next = step_double_integrator(x_cur, u0, dt)
+        # x_next = step_double_integrator(x_cur, u0, dt)
+        E_k = E[0]
+        x_next, key, w_k = step_with_disturbance(x_cur, u0, dt, E_k, key)
 
         u_hist.append(u0)
         x_hist.append(x_next)
@@ -261,7 +341,14 @@ def make_mpc_plan_video_mp4(
     ax.set_xlabel("px")
     ax.set_ylabel("py")
     ax.grid(True)
-    ax.legend(loc="best")
+    # Leave room on the left for the legend (tune as needed)
+    fig.subplots_adjust(left=0.28)
+
+    # Put legend to the left, vertically centered, outside the axes
+    # xs = np.linspace(x_min, x_max, 200)
+    # ys = 1 / 4.0 * xs + 0.5
+    # ax.plot(xs, ys, "k--", linewidth=1.5, label="y = 4x + 1")
+    ax.legend(loc="center left", bbox_to_anchor=(-0.1, 0.5), borderaxespad=0.0)
 
     def init():
         executed_line.set_data([], [])
@@ -315,6 +402,40 @@ def make_mpc_plan_video_mp4(
     plt.close(fig)
     print(f"Saved video to: {out_path}")
 
+def build_straight_line_reference(
+    x0: jnp.ndarray,
+    x_goal: jnp.ndarray,
+    T: int,
+    step: float = 0.1,
+    dtype=jnp.float32,
+) -> jnp.ndarray:
+    """
+    Builds a straight-line reference in (px, py) to x_goal
+    with approximately `step` meters per timestep.
+
+    Velocities are set to zero.
+    Returns x_ref of shape (T+1, 4).
+    """
+    p0 = x0[:2]
+    pG = x_goal[:2]
+
+    delta = pG - p0
+    dist = jnp.linalg.norm(delta)
+    direction = delta / (dist + 1e-8)
+
+    # distance traveled per timestep
+    distances = jnp.minimum(
+        jnp.arange(T + 1, dtype=dtype) * step,
+        dist,
+    )
+
+    positions = p0[None, :] + distances[:, None] * direction[None, :]
+
+    velocities = jnp.zeros((T + 1, 2), dtype=dtype)
+
+    x_ref = jnp.concatenate([positions, velocities], axis=1)
+    return x_ref
+
 
 # -----------------------------
 # Main
@@ -327,7 +448,7 @@ def main():
     x_ref = jnp.array([4.0, 1.0, 0.0, 0.0], dtype=dtype)
 
     px_max = 5.0
-    py_max = 1.2
+    py_max = 5.0
     vx_max = 5.0
     vy_max = 5.0
     ux_max = 5.0
@@ -336,18 +457,18 @@ def main():
     A, B, c = build_ltv_dynamics(T, dt, dtype=dtype)
     C, D, f = make_box_constraints(T, px_max, py_max, vx_max, vy_max, ux_max, uy_max, dtype=dtype)
     Q, q, R, r, M = make_quadratic_cost(T, x_ref=x_ref, dtype=dtype)
-    E = build_disturbance_scale(T, sigma=0.05, dtype=dtype)
+    E = build_disturbance_scale(T, sigma=0.075, dtype=dtype)
 
     sls_config = SLSConfig(
-        max_sls_iterations=10,
+        max_sls_iterations=2,
         sls_primal_tol=1e-2,
         enable_fastsls=False,
     )
 
     cfg = ADMMConfig(
         eps_abs=1e-2,
-        eps_rel=1e-2,
-        rho_max=1e5,
+        eps_rel=1e-3,
+        rho_max=1e10,
     )
 
     x0 = jnp.array([0.0, 0.0, 0.0, 0.0], dtype=dtype)

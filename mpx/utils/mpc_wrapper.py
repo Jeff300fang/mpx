@@ -351,7 +351,7 @@ class MPCControllerWrapper:
         )
 
         # Execute the MPC optimization.
-        X, U, V, w, y, rho = self._solve(
+        X, U, V, w, y, rho, backoffs = self._solve(
             reference,
             parameter,
             self.config.W,

@@ -188,7 +188,8 @@ cfg = ADMMConfig(
     )
 sls_config = SLSConfig(
     max_sls_iterations = 1,
-    sls_primal_tol = 1e-2
+    sls_primal_tol = 1e-2,
+    enable_fastsls=False,
 )
 mpc = mpc_wrapper.MPCControllerWrapper(config, sls_config, cfg, obstacle_cosntraints, num_constraints, disturbance)
 env.mjData.qpos = jnp.concatenate([config.p0, config.quat0,config.q0])
