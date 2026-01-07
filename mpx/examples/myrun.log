@@ -1,0 +1,57 @@
+W0105 23:32:26.605972   87206 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+W0105 23:32:26.607862   87127 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+Traceback (most recent call last):
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py", line 2854, in _cached_compilation
+    xla_executable = compiler.compile_or_get_cached(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/compiler.py", line 478, in compile_or_get_cached
+    return _compile_and_write_cache(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/compiler.py", line 746, in _compile_and_write_cache
+    executable = backend_compile_and_load(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/profiler.py", line 359, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/compiler.py", line 372, in backend_compile_and_load
+    raise e
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/compiler.py", line 353, in backend_compile_and_load
+    return backend.compile_and_load(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+jax.errors.JaxRuntimeError: INTERNAL: ptxas exited with non-zero error code 2, output: 
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./double_integrator_fastsls.py", line 503, in <module>
+    main()
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./double_integrator_fastsls.py", line 466, in main
+    x_hist, u_hist, plans_xy, lowers_xy, uppers_xy = run_mpc_loop_with_plans(
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./double_integrator_fastsls.py", line 217, in run_mpc_loop_with_plans
+    xN, uN, vN, w, y, rho, convergedN, converged_admm, h_ct = fast_sls_solve_gpu(
+                                                              ^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/traceback_util.py", line 195, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 264, in cache_miss
+    executable, pgle_profiler, const_args) = _python_pjit_helper(
+                                             ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 146, in _python_pjit_helper
+    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(
+                                               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 1620, in _pjit_call_impl_python
+    compiled = computation.compile()
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py", line 2527, in compile
+    executable = UnloadedMeshExecutable.from_hlo(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py", line 3073, in from_hlo
+    xla_executable = _cached_compilation(
+                     ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py", line 2851, in _cached_compilation
+    with dispatch.log_elapsed_time(
+  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/dispatch.py", line 200, in __exit__
+    def __exit__(self, exc_type, exc_value, traceback):
+  
+KeyboardInterrupt

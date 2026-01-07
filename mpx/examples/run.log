@@ -1,105 +1,16 @@
-W0101 22:01:28.416041 1464192 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
-W0101 22:01:28.417758 1464084 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
-Failed to import warp: No module named 'warp'
-Failed to import mujoco_warp: No module named 'warp'
-Traceback (most recent call last):
-  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./car.py", line 440, in <module>
-    main()
-  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./car.py", line 314, in main
-    _ = controller.run(x0=x, reference=reference, parameter=parameter)
-  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/utils/generic_mpc_wrapper.py", line 88, in run
-    X, U, V, w, y, rho = self._solve(
-  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/primal_dual_ilqr/primal_dual_ilqr/optimizers.py", line 675, in mpc
-    dX, dU, dV, q, r, w, y, rho = compute_search_direction(
-jax._src.source_info_util.JaxStackTraceBeforeTransformation: KeyboardInterrupt
-
-The preceding stack trace is the source of the JAX operation that, once transformed by JAX, triggered the following exception.
-
---------------------
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./car.py", line 440, in <module>
-    main()
-  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./car.py", line 314, in main
-    _ = controller.run(x0=x, reference=reference, parameter=parameter)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/utils/generic_mpc_wrapper.py", line 88, in run
-    X, U, V, w, y, rho = self._solve(
-                         ^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/traceback_util.py", line 195, in reraise_with_filtered_traceback
-    return fun(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 264, in cache_miss
-    executable, pgle_profiler, const_args) = _python_pjit_helper(
-                                             ^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 146, in _python_pjit_helper
-    out_flat, compiled, profiler, const_args = _pjit_call_impl_python(
-                                               ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 1610, in _pjit_call_impl_python
-    computation = _resolve_and_lower(
-                  ^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 1536, in _resolve_and_lower
-    return _pjit_lower(
-           ^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 1716, in _pjit_lower
-    return pxla.lower_sharding_computation(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/profiler.py", line 359, in wrapper
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py", line 2411, in lower_sharding_computation
-    nreps, tuple_args, shape_poly_state) = _cached_lowering_to_hlo(
-                                           ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py", line 2007, in _cached_lowering_to_hlo
-    lowering_result = mlir.lower_jaxpr_to_module(
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 1318, in lower_jaxpr_to_module
-    lower_jaxpr_to_fun(
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 1895, in lower_jaxpr_to_fun
-    out_vals, tokens_out = jaxpr_subcomp(
-                           ^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 2094, in jaxpr_subcomp
-    out_nodes, _inline = _uncached_lowering(
-                         ^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 2267, in _uncached_lowering
-    ans = lower_per_platform(ctx, str(primitive), platform_rules, default_rule,
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 2382, in lower_per_platform
-    output = kept_rules[0](ctx, *rule_args, **rule_kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 1911, in _pjit_lowering
-    func = _pjit_cached_lower_jaxpr_to_fun(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 1878, in _pjit_cached_lower_jaxpr_to_fun
-    func = mlir.lower_jaxpr_to_fun(
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 1895, in lower_jaxpr_to_fun
-    out_vals, tokens_out = jaxpr_subcomp(
-                           ^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 2094, in jaxpr_subcomp
-    out_nodes, _inline = _uncached_lowering(
-                         ^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 2267, in _uncached_lowering
-    ans = lower_per_platform(ctx, str(primitive), platform_rules, default_rule,
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 2382, in lower_per_platform
-    output = kept_rules[0](ctx, *rule_args, **rule_kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 1911, in _pjit_lowering
-    func = _pjit_cached_lower_jaxpr_to_fun(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/pjit.py", line 1878, in _pjit_cached_lower_jaxpr_to_fun
-    func = mlir.lower_jaxpr_to_fun(
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 1895, in lower_jaxpr_to_fun
-    out_vals, tokens_out = jaxpr_subcomp(
-                           ^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/interpreters/mlir.py", line 2064, in jaxpr_subcomp
-    with (source_info_util.user_context(eqn.source_info.traceback), loc,
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/jeff/miniconda3/envs/jaxgpu/lib/python3.11/site-packages/jax/_src/source_info_util.py", line 233, in __init__
-    def __init__(self, traceback: Traceback | None, *,
-  
-KeyboardInterrupt
+W0106 17:23:04.114942   29677 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+W0106 17:23:04.116599   29596 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+ADMM done: Total Iterations=130 converged=True rho=3.125e+03 rp=1.181e-03 (<= 1.499e-02) rd=0.000e+00 (<= 2.846e-02) Rho0 1.000e+00
+ADMM done: Total Iterations=399 converged=False rho=1.000e+10 rp=8.499e+03 (<= 8.509e+00) rd=4.768e+03 (<= 1.054e+13) Rho0 5.000e+02
+ADMM done: Total Iterations=399 converged=False rho=1.000e+10 rp=1.687e+00 (<= 1.668e-02) rd=0.000e+00 (<= 7.268e+08) Rho0 1.000e+00
+ADMM done: Total Iterations=399 converged=False rho=1.000e+10 rp=1.515e+05 (<= 1.514e+02) rd=3.815e+04 (<= 1.878e+14) Rho0 5.000e+02
+ADMM done: Total Iterations=399 converged=False rho=3.188e+09 rp=3.388e+08 (<= 3.388e+05) rd=0.000e+00 (<= 2.592e+16) Rho0 1.000e+00
+ADMM done: Total Iterations=399 converged=False rho=1.000e+10 rp=9.286e+11 (<= 9.286e+08) rd=0.000e+00 (<= 1.151e+21) Rho0 5.000e+02
+ADMM done: Total Iterations=399 converged=False rho=1.221e+09 rp=7.020e+16 (<= 7.020e+13) rd=0.000e+00 (<= 2.056e+24) Rho0 1.000e+00
+ADMM done: Total Iterations=399 converged=False rho=1.000e+10 rp=1.924e+20 (<= 1.924e+17) rd=0.000e+00 (<= 2.386e+29) Rho0 5.000e+02
+ADMM done: Total Iterations=399 converged=False rho=1.221e+09 rp=1.455e+25 (<= 1.455e+22) rd=0.000e+00 (<= 4.262e+32) Rho0 1.000e+00
+ADMM done: Total Iterations=399 converged=False rho=nan rp=nan (<= nan) rd=nan (<= nan) Rho0 5.000e+02
+Non-finite state at MPC step 4; stopping.
+Saved video to: mpc_plans.mp4
+x_final: [-1.9242050e+18  1.3309476e-01            nan            nan]
+max |u|: nan

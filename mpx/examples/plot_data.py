@@ -60,7 +60,7 @@ mask = ~np.isnan(data[:, 2])
 x = data[mask, 0]
 y = data[mask, 1]
 z = data[mask, 2]
-x = np.log10(x) ** 2
+x = np.log10(x)
 y = np.log10(y)
 z = np.log10(z)
 
