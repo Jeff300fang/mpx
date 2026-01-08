@@ -10,6 +10,7 @@ config.update("jax_enable_x64", False)
 
 from mpx.primal_dual_ilqr.primal_dual_ilqr.fast_sls import fast_sls_solve_gpu, SLSConfig
 from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMConfig
+from mpx.utils.fast_sls_visual import get_trajectory_tubes
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
@@ -140,9 +141,9 @@ def sample_unit_ball(key: jax.Array, dim: int, dtype=jnp.float32) -> jnp.ndarray
     v_norm = jnp.linalg.norm(v) + jnp.array(1e-12, dtype=dtype)
     v = v / v_norm
     r = jr.uniform(k2, (), minval=0.0, maxval=1.0, dtype=dtype)
-    # return r * v
-    w = jnp.array([0.707, 0.707, 0.0, 0.0])
-    return w
+    return r * v
+    # w = jnp.array([0.707, 0.707, 0.0, 0.0])
+    # return w
 
 
 # -----------------------------
@@ -223,11 +224,12 @@ def run_mpc_loop_with_plans(
     plans_xy = []
     lowers_xy = []
     uppers_xy = []
-    tube = []
 
     key = jax.random.PRNGKey(0)
     zero_u = jnp.zeros((nu,), dtype=dtype)
-
+    w = jnp.zeros((T + 1, nc), dtype=dtype)
+    y = jnp.zeros((T + 1, nc), dtype=dtype)
+    rho = jnp.array(1.0, dtype=dtype)
     for t in range(n_steps):
         x_cur = x_hist[-1]
 
@@ -265,18 +267,12 @@ def run_mpc_loop_with_plans(
             E, Q_bar, R_bar
         )
 
-        # Optional: keep your Phi_x-derived tube metric
-        tube_k = []
-        for k in range(Phi_x.shape[0]):
-            tube_k.append(get_tube_box(Phi_x[k]))
-        tube.append(tube_k)
-
         if bool(converged_admm):
             # Assumes h_ct is (T+1, 2) or (T+1, >=2) giving xy radii in first 2 cols
             plan_xy = xN[:, :2]
-            h_xy = h_ct[:, :2]
-            lower = plan_xy - h_xy
-            upper = plan_xy + h_xy
+            tube = get_trajectory_tubes(Phi_x)
+            lower = plan_xy - tube[:, :2]
+            upper = plan_xy + tube[:, :2]
             u0 = uN[0]
         else:
             # Disregard plan; replace with current position repeated (degenerate tube)
@@ -305,7 +301,7 @@ def run_mpc_loop_with_plans(
     plans_xy = jnp.stack(plans_xy, axis=0)  # [N, T+1, 2]
     lowers_xy = jnp.stack(lowers_xy, axis=0)  # [N, T+1, 2]
     uppers_xy = jnp.stack(uppers_xy, axis=0)  # [N, T+1, 2]
-    return x_hist, u_hist, plans_xy, lowers_xy, uppers_xy, tube
+    return x_hist, u_hist, plans_xy, lowers_xy, uppers_xy
 
 def run_mpc_loop_with_plans_rollout(
     *,
@@ -336,10 +332,8 @@ def run_mpc_loop_with_plans_rollout(
     plans_xy = []
     lowers_xy = []
     uppers_xy = []
-    tube = []
 
     key = jax.random.PRNGKey(0)
-    zero_u = jnp.zeros((nu,), dtype=dtype)
 
     q = jnp.einsum("kij,j->ki", -Q, x_ref.astype(dtype))
 
@@ -376,31 +370,10 @@ def run_mpc_loop_with_plans_rollout(
     disturbance_history = []
     for t in range(n_steps):
         x_cur = x_hist[-1]
-
-        # Optional: keep your Phi_x-derived tube metric
-        tube_k = []
-        for k in range(Phi_x.shape[0]):
-            tube_k.append(get_tube_box(Phi_x[k]))
-        tube.append(tube_k)
-
-        # if bool(converged_admm):
-        #     # Assumes h_ct is (T+1, 2) or (T+1, >=2) giving xy radii in first 2 cols
-        #     plan_xy = xN[:, :2]
-        #     h_xy = h_ct[:, :2]
-        #     lower = plan_xy - h_xy
-        #     upper = plan_xy + h_xy
-        #     u0 = uN[0]
-        # else:
-        #     # Disregard plan; replace with current position repeated (degenerate tube)
-        #     plan_xy = jnp.broadcast_to(x_cur[:2], (T + 1, 2)).astype(dtype)
-        #     lower = plan_xy
-        #     upper = plan_xy
-        #     u0 = zero_u
-
+        current_tube = get_trajectory_tubes(Phi_x)
         plan_xy = xN[:, :2]
-        h_xy = h_ct[:, :2]
-        lower = plan_xy - h_xy
-        upper = plan_xy + h_xy
+        lower = plan_xy - current_tube[:, :2]
+        upper = plan_xy + current_tube[:, :2]
         disturbance_feedback = jnp.zeros((nu,), dtype=dtype)
         for j in range(t):
             disturbance_feedback += Phi_u[t, j] @ disturbance_history[j]
@@ -428,7 +401,7 @@ def run_mpc_loop_with_plans_rollout(
     plans_xy = jnp.stack(plans_xy, axis=0)  # [N, T+1, 2]
     lowers_xy = jnp.stack(lowers_xy, axis=0)  # [N, T+1, 2]
     uppers_xy = jnp.stack(uppers_xy, axis=0)  # [N, T+1, 2]
-    return x_hist, u_hist, plans_xy, lowers_xy, uppers_xy, tube
+    return x_hist, u_hist, plans_xy, lowers_xy, uppers_xy
 
 # -----------------------------
 # Video rendering (MP4) with TUBE AS BOXES
@@ -440,7 +413,6 @@ def make_mpc_plan_video_mp4(
     uppers_xy: jnp.ndarray,
     px_max: float,
     py_max: float,
-    tube,  # kept for signature compatibility (not used here)
     out_path: str = "mpc_plans.mp4",
     fps: int = 10,
     box_stride: int = 1,  # set to 2, 5, ... to reduce clutter for large T
@@ -658,7 +630,7 @@ def main():
     x0 = jnp.array([0.0, 0.0, 0.0, 0.0], dtype=dtype)
     n_steps = 30
 
-    x_hist, u_hist, plans_xy, lowers_xy, uppers_xy, tube = run_mpc_loop_with_plans_rollout(
+    x_hist, u_hist, plans_xy, lowers_xy, uppers_xy = run_mpc_loop_with_plans_rollout(
         x0=x0,
         x_ref=x_ref,
         T=T,
@@ -686,10 +658,9 @@ def main():
         uppers_xy=uppers_xy,
         px_max=px_max,
         py_max=py_max,
-        tube=tube,
         out_path="mpc_plans.mp4",
         fps=10,
-        box_stride=1,  # change to 1 for every box, or larger to reduce clutter
+        box_stride=1,
     )
 
     print("x_final:", x_hist[-1])

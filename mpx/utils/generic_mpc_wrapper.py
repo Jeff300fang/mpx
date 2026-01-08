@@ -8,12 +8,13 @@ import jax
 import jax.numpy as jnp
 
 import mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers as optimizers
-
+from mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers import SQPConfig
 
 class GenericMPCControllerWrapper:
     def __init__(
         self,
         sls_config,
+        sqp_config,
         admm_config,
         config,
         dynamics,
@@ -29,6 +30,7 @@ class GenericMPCControllerWrapper:
         jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
 
         self.sls_config = sls_config
+        self.sqp_config = sqp_config
         self.admm_config = admm_config
         self.config = config
         self.shift = shift
@@ -55,6 +57,7 @@ class GenericMPCControllerWrapper:
         work = partial(
             optimizers.mpc,
             self.sls_config,
+            self.sqp_config,
             self.admm_config,
             cost,
             dynamics,
@@ -85,7 +88,7 @@ class GenericMPCControllerWrapper:
         self._update_and_extract = update_and_extract
 
     def run(self, x0: jnp.ndarray, reference: jnp.ndarray, parameter: Any):
-        X, U, V, w, y, rho, backoffs = self._solve(
+        X, U, V, w, y, rho, backoffs, Phi_x, Phi_u = self._solve(
             reference,
             parameter,
             self.config.W,
@@ -101,18 +104,19 @@ class GenericMPCControllerWrapper:
         # Warm-start ADMM-ish states
         # TODO: Make this an option to warm start / not warm
         s = self.shift
-        # self.w = jnp.zeros_like(w)
-        # self.y = jnp.zeros_like(y)
+        self.w = jnp.zeros_like(w)
+        self.y = jnp.zeros_like(y)
         # Car
-        self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
-        self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
+        # self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
+        # self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
 
         # rho management (matches your earlier wrapper pattern)
         rho = jnp.asarray(rho, dtype=self.rho.dtype)
         # self.rho = jnp.maximum(jnp.minimum(rho, 1e3) * 0.9, 0.01) # car
-        self.rho = jnp.maximum(jnp.minimum(rho, 0.1) * 0.9, 0.01) # pendulum 
+        # self.rho = jnp.maximum(jnp.minimum(rho, 0.1) * 0.9, 0.01) # pendulum 
+        rho = jnp.array(1.0)
         self.y = rho / self.rho * self.y
 
         self.U0, self.X0, self.V0 = self._update_and_extract(U, X, V, x0)
 
-        return U[0], X, U, V, backoffs
+        return U[0], X, U, V, backoffs, Phi_x, Phi_u
