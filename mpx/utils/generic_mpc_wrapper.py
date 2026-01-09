@@ -19,6 +19,7 @@ class GenericMPCControllerWrapper:
         config,
         dynamics,
         constraints,
+        obstacles,
         cost,
         num_constraints: int,
         disturbance,
@@ -36,6 +37,7 @@ class GenericMPCControllerWrapper:
         self.admm_config = admm_config
         self.config = config
         self.shift = shift
+        self.obstacles = obstacles
 
         # Warm starts
         # self.U0 = jnp.tile(jnp.zeros((config.nu,)), (config.N, 1))         # (T, nu)
@@ -103,6 +105,7 @@ class GenericMPCControllerWrapper:
             self.w,
             self.y,
             self.rho,
+            self.obstacles,
         )
 
         # Warm-start ADMM-ish states

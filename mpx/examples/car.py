@@ -18,7 +18,7 @@ from __future__ import annotations
 from functools import partial
 from jax import config
 config.update("jax_enable_x64", True)
-
+from matplotlib.ticker import MultipleLocator
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -303,13 +303,13 @@ def main():
     )
 
     sls_cfg = SLSConfig(
-        max_sls_iterations=7,
+        max_sls_iterations=3,
         sls_primal_tol=1e-2,
         enable_fastsls=False
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 54,
+        max_sqp_iterations = 40,
     )
 
     parameter = dt
@@ -321,11 +321,11 @@ def main():
     u_max = jnp.array([v_max,  om_max])
 
     constraints_u = make_control_box_constraints(u_min, u_max)
-    x_max = jnp.array([10.0, 10.0, jnp.pi], dtype=jnp.float64)   # [px, py, theta]
-    x_min = -x_max                                                # symmetric box; adjust if desired
+    x_max = jnp.array([10.0, 10.0, jnp.inf], dtype=jnp.float64)
+    x_min = -x_max
 
     constraints_x = make_state_box_constraints(x_min, x_max)
-    
+
     centers = jnp.array([[1.0, 0.04]])   # (K,2)
     radii   = jnp.array([0.15])         # (K,)
     K = centers.shape[0]
@@ -337,23 +337,24 @@ def main():
         radii=radii,
     )  # returns (K,)
 
-    # Combine: first control bounds, then obstacles
+    constraints_all = combine_constraints(constraints_x, constraints_u)
+    # constraints_all = combine_constraints(constraints_all, obstacle_constraints)
     # constraints_all = combine_constraints(constraints_u, obstacle_constraints)
-    # constraints_all = combine_constraints(
-    #     combine_constraints(constraints_u, constraints_x),
-    #     obstacle_constraints,
-    # )
-    constraints_all = combine_constraints(constraints_u, constraints_x)
-
+    # constraints_all = constraints_u
     # Total constraint count:
-    nc = 2 * nu + 2 * n
-    # nc = 2 * nu + K
+    obstacles = jnp.array([[1.0, 0.08, 0.15], [1.5, -0.4, 0.15]])
+    n_obs = obstacles.shape[0]
+    # obstacles = jnp.array([])
+    centers = jnp.array([[1.0, 0.08], [1.5, -0.4]])   # (K,2)
+    radii   = jnp.array([0.15, 0.15])         # (K,)
+    nc = 2 * nu + 2 * n + n_obs
+    # nc = 2 * nu + 1
+    # nc = 2 * nu
 
     # disturbance = make_zero_disturbance(n=n)
-    E_mag = 0.4
+    E_mag = 0.3
     alpha_sim = E_mag * dt
     disturbance = make_constant_disturbance(n=n, alpha=alpha_sim)
-
     controller = GenericMPCControllerWrapper(
         sls_cfg,
         sqp_cfg,
@@ -361,6 +362,7 @@ def main():
         config=cfg,
         dynamics=dynamics,
         constraints=constraints_all,
+        obstacles=obstacles,
         cost=cost,
         num_constraints=nc,
         disturbance=disturbance,
@@ -376,7 +378,7 @@ def main():
     x = jnp.array([0.0, 0.0, 0.0])
     # X_ref, U_ref = build_forward_reference(x, N, dt)
     # print(X_ref)
-    x_goal = jnp.array([2.0, 2.0, 0.0])  # shape (nx,)
+    x_goal = jnp.array([3.0, 0.0, 0.0])  # shape (nx,)
     X_ref = jnp.tile(x_goal[None, :], (N + 1, 1))  # shape (N+1, nx)
     reference = X_ref
     # Closed-loop rollout
@@ -442,20 +444,20 @@ def main():
     end = time.perf_counter()
     jax.debug.print("Nominal trajectory done")
     admm_cfg = ADMMConfig(
-        eps_abs=5e-2,
+        eps_abs=1e-1,
         eps_rel=0,
         rho_max=1e10,
         max_iterations=800,
     )
 
     sls_cfg = SLSConfig(
-        max_sls_iterations=10,
+        max_sls_iterations=2,
         sls_primal_tol=1e-2,
         enable_fastsls=True
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 1,
+        max_sqp_iterations = 20,
     )
     controller = GenericMPCControllerWrapper(
         sls_cfg,
@@ -464,6 +466,7 @@ def main():
         config=cfg,
         dynamics=dynamics,
         constraints=constraints_all,
+        obstacles=obstacles,
         cost=cost,
         num_constraints=nc,
         disturbance=disturbance,
@@ -496,8 +499,8 @@ def main():
         total_time += dt_run
         min_time = min(min_time, dt_run)
         disturbance_feedback = jnp.zeros((nu,))
-        # for j in range(k):
-        #     disturbance_feedback += Phi_u[k, j] @ disturbance_history[j]
+        for j in range(k):
+            disturbance_feedback += Phi_u[k, j] @ disturbance_history[j]
         u0 = U_pred[k] + disturbance_feedback
         # apply
         key, x, w = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
@@ -511,7 +514,7 @@ def main():
         jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)
         if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
             jax.debug.print("Crashed!")
-            # break
+            break
         xs.append(x)
         us.append(u0)
 
@@ -549,16 +552,16 @@ def main():
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
 
     # ---- X direction ----
-    ax1.plot(t, dx_np, label="|x - x_nominal|")
-    ax1.plot(t, tube_x_np, label="tube size (x)")
+    ax1.plot(t, tube_x_np, label="tube size (x)")        # now this becomes blue
+    ax1.plot(t, dx_np, label="|x - x_nominal|")  
     ax1.set_ylabel("meters")
     ax1.set_title("X-direction: Deviation vs Tube Size")
     ax1.grid(True)
     ax1.legend()
 
     # ---- Y direction ----
-    ax2.plot(t, dy_np, label="|y - y_nominal|")
     ax2.plot(t, tube_y_np, label="tube size (y)")
+    ax2.plot(t, dy_np, label="|y - y_nominal|")
     ax2.set_xlabel("time (s)")
     ax2.set_ylabel("meters")
     ax2.set_title("Y-direction: Deviation vs Tube Size")
@@ -567,7 +570,7 @@ def main():
 
     plt.tight_layout()
     plt.savefig(
-        "disturbance_vs_tube_size_xy.png",
+        "disturbance_vs_tube_size_xy_dubins.png",
         dpi=300,
         bbox_inches="tight",
     )
@@ -655,6 +658,11 @@ def save_replay(
     ax.set_aspect("equal", adjustable="box")
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
+
+    ax.xaxis.set_major_locator(MultipleLocator(0.5))
+    ax.yaxis.set_major_locator(MultipleLocator(0.5))
+
+
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_title("Dubins MPC Replay: Plans + Tube Boxes")
@@ -673,7 +681,7 @@ def save_replay(
     ax.add_collection(tube_boxes)
 
     ax.grid(True)
-    ax.legend(loc="best")
+    # ax.legend(loc="best")
 
     title = ax.text(
         0.02, 0.98, "", transform=ax.transAxes, va="top", ha="left"
