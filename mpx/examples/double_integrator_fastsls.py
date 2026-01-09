@@ -141,9 +141,9 @@ def sample_unit_ball(key: jax.Array, dim: int, dtype=jnp.float32) -> jnp.ndarray
     v_norm = jnp.linalg.norm(v) + jnp.array(1e-12, dtype=dtype)
     v = v / v_norm
     r = jr.uniform(k2, (), minval=0.0, maxval=1.0, dtype=dtype)
-    return r * v
-    # w = jnp.array([0.707, 0.707, 0.0, 0.0])
-    # return w
+    # return r * v
+    w = jnp.array([0.0, 0.8, 0.0, 0.0])
+    return w
 
 
 # -----------------------------
@@ -179,17 +179,6 @@ def step_with_disturbance(
     x_nom = step_double_integrator(x, u, dt)
     x_next = x_nom + E_k @ w
     return x_next, key, w
-
-
-def get_tube_box(Phi_xk):
-    # total_x = 0.0
-    # total_y = 0.0
-    # for j in range(Phi_xk.shape[0]):
-    #     total_x += jnp.linalg.norm(Phi_xk[j, 0], ord=2)
-    #     total_y += jnp.linalg.norm(Phi_xk[j, 1], ord=2)
-    # return jnp.array([total_x, total_y])
-    norms = jnp.linalg.norm(Phi_xk, ord=2, axis=-1)  # (T, 2)
-    return jnp.sum(norms, axis=0)    
 
 
 # -----------------------------
@@ -243,10 +232,10 @@ def run_mpc_loop_with_plans(
         w = jnp.zeros((T + 1, nc), dtype=dtype)
         y = jnp.zeros((T + 1, nc), dtype=dtype)
         rho = jnp.array(1.0, dtype=dtype)
-        Q_bar = Q
-        R_bar = R
-        # Q_bar = jnp.broadcast_to(jnp.eye(Q.shape[1]), Q.shape)
-        # R_bar = jnp.broadcast_to(jnp.eye(R.shape[1]), R.shape)
+        # Q_bar = Q
+        # R_bar = R
+        Q_bar = jnp.broadcast_to(jnp.eye(Q.shape[1]), Q.shape)
+        R_bar = jnp.broadcast_to(jnp.eye(R.shape[1]), R.shape)
         xN, uN, vN, w, y, rho, convergedN, converged_admm, h_ct, Phi_x, Phi_u = fast_sls_solve_gpu(
             cfg,
             Q,
@@ -368,6 +357,10 @@ def run_mpc_loop_with_plans_rollout(
         E, Q_bar, R_bar
     )
     disturbance_history = []
+    tube_size_x = []
+    tube_size_y = []
+    distance_from_nominal_x = []
+    distance_from_nominal_y = []
     for t in range(n_steps):
         x_cur = x_hist[-1]
         current_tube = get_trajectory_tubes(Phi_x)
@@ -386,7 +379,10 @@ def run_mpc_loop_with_plans_rollout(
         # Step the real system with disturbance
         E_k = E[0]
         x_next, key, w_k = step_with_disturbance(x_cur, u0, dt, E_k, key)
-
+        tube_size_x.append(current_tube[t + 1, 0])
+        tube_size_y.append(current_tube[t + 1, 1])
+        distance_from_nominal_x.append(abs(x_next[0] - xN[t + 1, 0] ))
+        distance_from_nominal_y.append(abs(x_next[1] - xN[t + 1, 1] ))
         disturbance_history.append(w_k)
 
         u_hist.append(u0)
@@ -401,7 +397,7 @@ def run_mpc_loop_with_plans_rollout(
     plans_xy = jnp.stack(plans_xy, axis=0)  # [N, T+1, 2]
     lowers_xy = jnp.stack(lowers_xy, axis=0)  # [N, T+1, 2]
     uppers_xy = jnp.stack(uppers_xy, axis=0)  # [N, T+1, 2]
-    return x_hist, u_hist, plans_xy, lowers_xy, uppers_xy
+    return x_hist, u_hist, plans_xy, lowers_xy, uppers_xy, tube_size_x, tube_size_y, distance_from_nominal_x, distance_from_nominal_y
 
 # -----------------------------
 # Video rendering (MP4) with TUBE AS BOXES
@@ -485,7 +481,7 @@ def make_mpc_plan_video_mp4(
     ax.grid(True)
 
     fig.subplots_adjust(left=0.28)
-    ax.legend(loc="center left", bbox_to_anchor=(-0.1, 0.5), borderaxespad=0.0)
+    # ax.legend(loc="center left", bbox_to_anchor=(-0.1, 0.5), borderaxespad=0.0)
 
     def init():
         executed_line.set_data([], [])
@@ -601,7 +597,7 @@ def main():
     T = 100
     dtype = jnp.float32
 
-    x_ref = jnp.array([4.0, 1.0, 0.0, 0.0], dtype=dtype)
+    x_ref = jnp.array([2.0, 1.0, 0.0, 0.0], dtype=dtype)
 
     px_max = 5.0
     py_max = 5.0
@@ -630,7 +626,7 @@ def main():
     x0 = jnp.array([0.0, 0.0, 0.0, 0.0], dtype=dtype)
     n_steps = 30
 
-    x_hist, u_hist, plans_xy, lowers_xy, uppers_xy = run_mpc_loop_with_plans_rollout(
+    x_hist, u_hist, plans_xy, lowers_xy, uppers_xy, tube_size_x, tube_size_y, diff_x, diff_y = run_mpc_loop_with_plans_rollout(
         x0=x0,
         x_ref=x_ref,
         T=T,
@@ -651,6 +647,46 @@ def main():
         dtype=dtype,
     )
 
+    # Convert to NumPy
+    tube_size_x_np = np.asarray(tube_size_x)
+    tube_size_y_np = np.asarray(tube_size_y)
+    diff_x_np = np.asarray(diff_x)
+    diff_y_np = np.asarray(diff_y)
+
+    t = np.arange(len(tube_size_x_np)) * dt
+
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=(8, 6), sharex=True
+    )
+
+    # ---- X direction ----
+    ax1.plot(t, tube_size_x_np, label="Tube size x")
+    ax1.plot(t, diff_x_np, label="|x - x_nominal|")
+    ax1.set_ylabel("meters")
+    ax1.set_title("X-direction: Tube Size vs Deviation")
+    ax1.grid(True)
+    ax1.legend()
+
+    # ---- Y direction ----
+    ax2.plot(t, tube_size_y_np, label="Tube size y")
+    ax2.plot(t, diff_y_np, label="|y - y_nominal|")
+    ax2.set_xlabel("time (s)")
+    ax2.set_ylabel("meters")
+    ax2.set_title("Y-direction: Tube Size vs Deviation")
+    ax2.grid(True)
+    ax2.legend()
+
+    plt.tight_layout()
+    plt.savefig(
+        "tube_size_vs_deviation_double_integrator.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close(fig)
+
+    print("Saved plot to: tube_size_vs_deviation.png")
+
+
     make_mpc_plan_video_mp4(
         x_hist=x_hist,
         plans_xy=plans_xy,
@@ -659,7 +695,7 @@ def main():
         px_max=px_max,
         py_max=py_max,
         out_path="mpc_plans.mp4",
-        fps=10,
+        fps=30,
         box_stride=1,
     )
 

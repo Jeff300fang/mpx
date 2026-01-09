@@ -22,6 +22,8 @@ class GenericMPCControllerWrapper:
         cost,
         num_constraints: int,
         disturbance,
+        X_in,
+        U_in,
         limited_memory: bool = False,
         shift: int = 1,
     ):
@@ -36,8 +38,10 @@ class GenericMPCControllerWrapper:
         self.shift = shift
 
         # Warm starts
-        self.U0 = jnp.tile(jnp.zeros((config.nu,)), (config.N, 1))         # (T, nu)
-        self.X0 = jnp.tile(jnp.zeros((config.n,)),  (config.N + 1, 1))     # (T+1, n)
+        # self.U0 = jnp.tile(jnp.zeros((config.nu,)), (config.N, 1))         # (T, nu)
+        self.U0 = U_in
+        # self.X0 = jnp.tile(jnp.zeros((config.n,)),  (config.N + 1, 1))     # (T+1, n)
+        self.X0 = X_in    # (T+1, n)
         self.V0 = jnp.zeros((config.N + 1, config.n))                      # (T+1, n)
 
         # ADMM states for inequality constraints

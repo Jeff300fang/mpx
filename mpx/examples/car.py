@@ -94,7 +94,7 @@ def dubins_step_with_disturbance(
     n = jnp.asarray(x.shape[0], dtype=x.dtype)  # n = 3, but keep generic
     r = jax.random.uniform(key_rad, (), minval=0.0, maxval=1.0, dtype=x.dtype) ** (1.0 / n)
     # w = r * z  # ||w||_2 <= 1
-    w = jnp.array([-0.707, 0.707, 0])
+    w = jnp.array([0.0, 1.0, 0])
 
     # Additive disturbance
     x_next = x_nom + E @ w
@@ -252,6 +252,26 @@ def summarize_dyn_defect(err_wrapped: jnp.ndarray) -> dict:
         "comp_max_abs": comp_max,
     }
 
+def make_state_box_constraints(
+    x_min: jnp.ndarray,
+    x_max: jnp.ndarray,
+) -> Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray]:
+    """
+    Inequality constraints g(x,u,t) <= 0 for state bounds:
+      x - x_max <= 0
+      x_min - x <= 0
+
+    Note: This constrains theta directly in [-pi, pi] if you set that as bounds.
+    Your dynamics already wrap theta, so it's consistent.
+    """
+    x_min = jnp.asarray(x_min)
+    x_max = jnp.asarray(x_max)
+
+    def constraints(x: jnp.ndarray, u: jnp.ndarray, t: jnp.ndarray) -> jnp.ndarray:
+        return jnp.concatenate([x - x_max, x_min - x], axis=0)
+
+    return constraints
+
 # -----------------------------
 # Main experiment
 # -----------------------------
@@ -263,8 +283,6 @@ def main():
     # Horizon and dt
     N = 100
     dt = 0.025
-    # N = 100
-    # dt = 0.01
 
     # Weights: (x, y, theta, v, omega)
     W = jnp.array([5.0, 5.0, 0.1, 0.1, 0.1])
@@ -278,20 +296,20 @@ def main():
     )
 
     admm_cfg = ADMMConfig(
-        eps_abs=4.5e-2,
+        eps_abs=4e-2,
         eps_rel=0,
         rho_max=1e10,
-        max_iterations=800,
+        max_iterations=1000,
     )
 
     sls_cfg = SLSConfig(
-        max_sls_iterations=5,
+        max_sls_iterations=7,
         sls_primal_tol=1e-2,
-        enable_fastsls=True
+        enable_fastsls=False
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 10,
+        max_sqp_iterations = 54,
     )
 
     parameter = dt
@@ -303,7 +321,12 @@ def main():
     u_max = jnp.array([v_max,  om_max])
 
     constraints_u = make_control_box_constraints(u_min, u_max)
-    centers = jnp.array([[1.0, 0.08]])   # (K,2)
+    x_max = jnp.array([10.0, 10.0, jnp.pi], dtype=jnp.float64)   # [px, py, theta]
+    x_min = -x_max                                                # symmetric box; adjust if desired
+
+    constraints_x = make_state_box_constraints(x_min, x_max)
+    
+    centers = jnp.array([[1.0, 0.04]])   # (K,2)
     radii   = jnp.array([0.15])         # (K,)
     K = centers.shape[0]
 
@@ -315,14 +338,19 @@ def main():
     )  # returns (K,)
 
     # Combine: first control bounds, then obstacles
-    constraints_all = combine_constraints(constraints_u, obstacle_constraints)
+    # constraints_all = combine_constraints(constraints_u, obstacle_constraints)
+    # constraints_all = combine_constraints(
+    #     combine_constraints(constraints_u, constraints_x),
+    #     obstacle_constraints,
+    # )
+    constraints_all = combine_constraints(constraints_u, constraints_x)
 
     # Total constraint count:
-    nc = 2 * nu 
-    nc = 2 * nu + K
+    nc = 2 * nu + 2 * n
+    # nc = 2 * nu + K
 
     # disturbance = make_zero_disturbance(n=n)
-    E_mag = 0.1
+    E_mag = 0.4
     alpha_sim = E_mag * dt
     disturbance = make_constant_disturbance(n=n, alpha=alpha_sim)
 
@@ -338,6 +366,8 @@ def main():
         disturbance=disturbance,
         limited_memory=False,
         shift=1,
+        X_in=jnp.zeros((cfg.N + 1, cfg.n)),
+        U_in=jnp.zeros((cfg.N, cfg.nu))
     )
 
     # -----------------------------
@@ -345,7 +375,8 @@ def main():
     # -----------------------------
     x = jnp.array([0.0, 0.0, 0.0])
     # X_ref, U_ref = build_forward_reference(x, N, dt)
-    x_goal = jnp.array([2.0, 0.0, 0.0])  # shape (nx,)
+    # print(X_ref)
+    x_goal = jnp.array([2.0, 2.0, 0.0])  # shape (nx,)
     X_ref = jnp.tile(x_goal[None, :], (N + 1, 1))  # shape (N+1, nx)
     reference = X_ref
     # Closed-loop rollout
@@ -409,14 +440,50 @@ def main():
     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
     u0.block_until_ready()
     end = time.perf_counter()
+    jax.debug.print("Nominal trajectory done")
+    admm_cfg = ADMMConfig(
+        eps_abs=5e-2,
+        eps_rel=0,
+        rho_max=1e10,
+        max_iterations=800,
+    )
+
+    sls_cfg = SLSConfig(
+        max_sls_iterations=10,
+        sls_primal_tol=1e-2,
+        enable_fastsls=True
+    )
+
+    sqp_cfg = SQPConfig(
+        max_sqp_iterations = 1,
+    )
+    controller = GenericMPCControllerWrapper(
+        sls_cfg,
+        sqp_cfg,
+        admm_cfg,
+        config=cfg,
+        dynamics=dynamics,
+        constraints=constraints_all,
+        cost=cost,
+        num_constraints=nc,
+        disturbance=disturbance,
+        limited_memory=False,
+        shift=1,
+        X_in=X_pred,
+        U_in=U_pred,
+    )
+    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
     
     disturbance_history = []
     disturbed_distance = []
+    disturbed_distance_y = []
     tube_size = []
+    tube_size_y = []
     for k in range(T_steps):
         print(f"sim iteration {k}")
         tube = get_trajectory_tubes(Phi_x)
         tube_size.append(tube[k + 1, 0])
+        tube_size_y.append(tube[k + 1, 1])
         plan_xy = X_pred[:, :2]                     # (N+1, 2)
         lower = plan_xy - tube[:, :2]
         upper = plan_xy + tube[:, :2]
@@ -435,6 +502,7 @@ def main():
         # apply
         key, x, w = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
         disturbed_distance.append(abs(X_pred[k + 1, 0] - x[0]))
+        disturbed_distance_y.append(abs(X_pred[k + 1, 1] - x[1]))
         disturbance_history.append(w)
         # x = dubins_step(x, u0, dt)
         # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
@@ -443,7 +511,7 @@ def main():
         jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)
         if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
             jax.debug.print("Crashed!")
-            break
+            # break
         xs.append(x)
         us.append(u0)
 
@@ -471,31 +539,38 @@ def main():
     import matplotlib.pyplot as plt
 
     # convert to numpy
-    disturbed_distance_np = np.asarray(jnp.stack(disturbed_distance))
-    tube_xy_size_np = np.asarray(jnp.stack(tube_size))
+    dx_np = np.asarray(jnp.stack(disturbed_distance))
+    dy_np = np.asarray(jnp.stack(disturbed_distance_y))
+    tube_x_np = np.asarray(jnp.stack(tube_size))
+    tube_y_np = np.asarray(jnp.stack(tube_size_y))
 
-    t = np.arange(disturbed_distance_np.shape[0]) * dt
+    t = np.arange(dx_np.shape[0]) * dt
 
-    fig, ax = plt.subplots(figsize=(8, 4))
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
 
-    ax.plot(t, disturbed_distance_np, label="disturbance deviation (x)")
-    ax.plot(t, tube_xy_size_np, label="tube size (x)")
+    # ---- X direction ----
+    ax1.plot(t, dx_np, label="|x - x_nominal|")
+    ax1.plot(t, tube_x_np, label="tube size (x)")
+    ax1.set_ylabel("meters")
+    ax1.set_title("X-direction: Deviation vs Tube Size")
+    ax1.grid(True)
+    ax1.legend()
 
-    ax.set_xlabel("time (s)")
-    ax.set_ylabel("distance / tube size (m)")
-    ax.grid(True)
-    ax.legend()
+    # ---- Y direction ----
+    ax2.plot(t, dy_np, label="|y - y_nominal|")
+    ax2.plot(t, tube_y_np, label="tube size (y)")
+    ax2.set_xlabel("time (s)")
+    ax2.set_ylabel("meters")
+    ax2.set_title("Y-direction: Deviation vs Tube Size")
+    ax2.grid(True)
+    ax2.legend()
 
-    plt.title("Disturbance Deviation vs Tube Size Over Time")
     plt.tight_layout()
-
-    # ---- SAVE TO PNG ----
     plt.savefig(
-        "disturbance_vs_tube_size.png",
+        "disturbance_vs_tube_size_xy.png",
         dpi=300,
-        bbox_inches="tight"
+        bbox_inches="tight",
     )
-
     plt.close(fig)
 
 

@@ -1,351 +1,369 @@
-W0107 17:23:31.952745   98652 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
-W0107 17:23:31.954528   98548 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+W0108 17:27:48.256856  118152 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
+W0108 17:27:48.258603  118051 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn't support extracting fabric info or NVLink is not used by the device.
 Failed to import warp: No module named 'warp'
 Failed to import mujoco_warp: No module named 'warp'
 Warmup complete.
-ADMM done: Total Iterations=31 converged=True rho=5.000e+00 rp=0.000e+00 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.000e+00
-ADMM done: Total Iterations=82 converged=True rho=3.125e+02 rp=0.000e+00 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 2.500e+00
-ADMM done: Total Iterations=2 converged=True rho=1.562e+02 rp=0.000e+00 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.562e+02
-ADMM done: Total Iterations=2 converged=True rho=7.812e+01 rp=2.985e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 7.812e+01
-ADMM done: Total Iterations=40 converged=True rho=5.000e+00 rp=0.000e+00 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.000e+00
-ADMM done: Total Iterations=96 converged=True rho=1.250e+01 rp=0.000e+00 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 2.500e+00
-ADMM done: Total Iterations=80 converged=True rho=7.812e+02 rp=3.713e-02 (<= 4.500e-02) rd=2.243e-02 (<= 4.500e-02) Rho0 6.250e+00
-ADMM done: Total Iterations=4 converged=True rho=3.906e+02 rp=8.826e-03 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 3.906e+02
-ADMM done: Total Iterations=649 converged=True rho=2.116e+01 rp=3.566e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.000e+00
-ADMM done: Total Iterations=80 converged=True rho=1.322e+03 rp=3.041e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.058e+01
-ADMM done: Total Iterations=5 converged=True rho=5.000e+02 rp=2.645e-02 (<= 4.500e-02) rd=2.776e-14 (<= 4.500e-02) Rho0 5.000e+02
-ADMM done: Total Iterations=2 converged=True rho=2.500e+02 rp=2.726e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 2.500e+02
-ADMM done: Total Iterations=252 converged=True rho=6.966e+05 rp=4.296e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.000e+00
-ADMM done: Total Iterations=27 converged=True rho=2.500e+03 rp=4.493e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 5.000e+02
-ADMM done: Total Iterations=2 converged=True rho=5.000e+02 rp=4.469e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 5.000e+02
-ADMM done: Total Iterations=2 converged=True rho=2.500e+02 rp=4.293e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 2.500e+02
-ADMM done: Total Iterations=224 converged=True rho=6.250e+02 rp=0.000e+00 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.000e+00
-ADMM done: Total Iterations=2 converged=True rho=3.125e+02 rp=0.000e+00 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 3.125e+02
-ADMM done: Total Iterations=2 converged=True rho=1.562e+02 rp=0.000e+00 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.562e+02
-ADMM done: Total Iterations=2 converged=True rho=7.812e+01 rp=0.000e+00 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 7.812e+01
-ADMM done: Total Iterations=32 converged=True rho=5.000e+00 rp=0.000e+00 (<= 4.500e-02) rd=1.388e-16 (<= 4.500e-02) Rho0 1.000e+00
-ADMM done: Total Iterations=104 converged=True rho=3.467e+02 rp=4.329e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 2.500e+00
-ADMM done: Total Iterations=30 converged=True rho=8.668e+02 rp=0.000e+00 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.734e+02
-ADMM done: Total Iterations=77 converged=True rho=5.418e+04 rp=4.387e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 4.334e+02
-ADMM done: Total Iterations=80 converged=True rho=1.250e+02 rp=3.143e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.000e+00
-ADMM done: Total Iterations=30 converged=True rho=3.125e+02 rp=2.817e-02 (<= 4.500e-02) rd=1.735e-14 (<= 4.500e-02) Rho0 6.250e+01
-ADMM done: Total Iterations=30 converged=True rho=7.812e+02 rp=1.747e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.562e+02
-ADMM done: Total Iterations=3 converged=True rho=3.906e+02 rp=1.639e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 3.906e+02
-ADMM done: Total Iterations=552 converged=True rho=1.000e+15 rp=4.497e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.000e+00
-ADMM done: Total Iterations=799 converged=False rho=1.000e+15 rp=6.278e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 5.000e+02
-ADMM done: Total Iterations=55 converged=True rho=1.250e+04 rp=3.437e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 5.000e+02
-ADMM done: Total Iterations=3 converged=True rho=5.000e+02 rp=3.692e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 5.000e+02
-ADMM done: Total Iterations=55 converged=True rho=2.500e+01 rp=3.251e-02 (<= 4.500e-02) rd=1.110e-14 (<= 4.500e-02) Rho0 1.000e+00
-ADMM done: Total Iterations=55 converged=True rho=3.125e+02 rp=4.162e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.250e+01
-ADMM done: Total Iterations=2 converged=True rho=1.562e+02 rp=4.359e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.562e+02
-ADMM done: Total Iterations=127 converged=True rho=2.441e+05 rp=4.499e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 7.812e+01
-ADMM done: Total Iterations=56 converged=True rho=2.500e+01 rp=3.732e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.000e+00
-ADMM done: Total Iterations=38 converged=True rho=6.250e+01 rp=4.440e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.250e+01
-ADMM done: Total Iterations=5 converged=True rho=3.125e+01 rp=4.351e-02 (<= 4.500e-02) rd=6.939e-15 (<= 4.500e-02) Rho0 3.125e+01
-ADMM done: Total Iterations=102 converged=True rho=9.766e+03 rp=4.486e-02 (<= 4.500e-02) rd=0.000e+00 (<= 4.500e-02) Rho0 1.562e+01
+ADMM done: Total Iterations=2 converged=True rho=1.000e+01 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=30 converged=True rho=5.000e+01 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=32 converged=True rho=5.000e+01 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=33 converged=True rho=5.000e+01 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=162 converged=True rho=5.000e+01 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=99 converged=True rho=5.000e+01 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=2 converged=True rho=1.000e+01 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=127 converged=True rho=3.125e+04 rp=2.913e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=152 converged=True rho=1.562e+05 rp=3.839e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=2 converged=True rho=1.000e+01 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=2 converged=True rho=1.000e+01 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=56 converged=True rho=2.500e+02 rp=0.000e+00 (<= 4.000e-02) rd=6.939e-15 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=55 converged=True rho=2.500e+02 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=56 converged=True rho=2.500e+02 rp=1.730e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=3.876e-03 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=56 converged=True rho=2.500e+02 rp=4.873e-03 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=59 converged=True rho=2.500e+02 rp=5.841e-03 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=56 converged=True rho=2.500e+02 rp=0.000e+00 (<= 4.000e-02) rd=1.735e-15 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=7.710e-03 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=56 converged=True rho=2.500e+02 rp=2.107e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=56 converged=True rho=2.500e+02 rp=2.730e-02 (<= 4.000e-02) rd=3.469e-15 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=56 converged=True rho=2.500e+02 rp=2.728e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=2.264e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=82 converged=True rho=1.250e+03 rp=0.000e+00 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=56 converged=True rho=2.500e+02 rp=2.857e-02 (<= 4.000e-02) rd=1.735e-15 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=60 converged=True rho=2.500e+02 rp=3.896e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=59 converged=True rho=2.500e+02 rp=2.808e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=82 converged=True rho=1.250e+03 rp=6.192e-04 (<= 4.000e-02) rd=1.735e-14 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=1.892e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=2.949e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=59 converged=True rho=2.500e+02 rp=3.578e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=2.167e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=81 converged=True rho=1.250e+03 rp=3.461e-03 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=2.891e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=61 converged=True rho=2.500e+02 rp=3.123e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=3.786e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=2.758e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=1.476e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=133 converged=True rho=1.250e+03 rp=3.755e-03 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=34 converged=True rho=5.000e+01 rp=3.579e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=2.131e-02 (<= 4.000e-02) rd=8.674e-16 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=59 converged=True rho=2.500e+02 rp=1.257e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=2.224e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=2.973e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=3.123e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=81 converged=True rho=1.250e+03 rp=1.993e-03 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=1.860e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=59 converged=True rho=2.500e+02 rp=9.546e-03 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=3.775e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=59 converged=True rho=2.500e+02 rp=1.729e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=3.616e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=3.736e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=2.685e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=2.214e-02 (<= 4.000e-02) rd=0.000e+00 (<= 4.000e-02) Rho0 1.000e+01
+Nominal trajectory done
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=3.775e-02 (<= 1.000e-01) rd=0.000e+00 (<= 1.000e-01) Rho0 1.000e+01
+ADMM done: Total Iterations=57 converged=True rho=2.500e+02 rp=3.824e-02 (<= 1.000e-01) rd=0.000e+00 (<= 1.000e-01) Rho0 1.000e+01
+ADMM done: Total Iterations=58 converged=True rho=2.500e+02 rp=5.401e-02 (<= 1.000e-01) rd=0.000e+00 (<= 1.000e-01) Rho0 1.000e+01
 sim iteration 0
-x = 0.11057860994715875 y = 0.0017675000000000002
-Distance to obstacle 0.8928553819851109
+x = 0.12584087151469758 y = 0.0
+Distance to obstacle 0.8750738151231492
 sim iteration 1
-x = 0.22787575683491026 y = -0.003812927171593229
-Distance to obstacle 0.776659805606247
+x = 0.25217015082383637 y = 0.026263036024651958
+Distance to obstacle 0.7479560063921565
 sim iteration 2
-x = 0.3265102088603621 y = -0.012839429007471445
-Distance to obstacle 0.6798585576042612
+x = 0.3693208352377189 y = 0.07192904649733073
+Distance to obstacle 0.6314868746660355
 sim iteration 3
-x = 0.4315208122148379 y = -0.026014125428427574
-Distance to obstacle 0.5782798472497827
+x = 0.4832446384697613 y = 0.13551647062065092
+Distance to obstacle 0.5255088009063915
 sim iteration 4
-x = 0.5456983672123242 y = -0.04269608535697703
-Distance to obstacle 0.47057868939793146
+x = 0.5869962798893655 y = 0.2093349359775215
+Distance to obstacle 0.4463702424756097
 sim iteration 5
-x = 0.6555952766611468 y = -0.05929952855978186
-Distance to obstacle 0.3715090471510613
+x = 0.6845646226038709 y = 0.2928814882711629
+Distance to obstacle 0.4042876753294326
 sim iteration 6
-x = 0.7643588800688665 y = -0.07476393920359936
-Distance to obstacle 0.28191951738078413
+x = 0.7743277366145062 y = 0.3815316690415392
+Distance to obstacle 0.40935540966235096
 sim iteration 7
-x = 0.884957271102545 y = -0.08960022640141577
-Distance to obstacle 0.2049367372327002
+x = 0.8599440907962452 y = 0.4766367436157811
+Distance to obstacle 0.45854912886002064
 sim iteration 8
-x = 0.9932017584888138 y = -0.09922020947853456
-Distance to obstacle 0.17934909972780524
+x = 0.9391441002020122 y = 0.5728530634045514
+Distance to obstacle 0.5363169097836069
 sim iteration 9
-x = 1.0846194180900783 y = -0.1030663706904476
-Distance to obstacle 0.20167732147089779
+x = 1.0146455800912144 y = 0.6715000450631055
+Distance to obstacle 0.6316698504210189
 sim iteration 10
-x = 1.2050943760600101 y = -0.10236325403488052
-Distance to obstacle 0.27444500271208294
+x = 1.086425843555916 y = 0.7703900382636812
+Distance to obstacle 0.7354855773087419
 sim iteration 11
-x = 1.3175409234966273 y = -0.09487898561757478
-Distance to obstacle 0.3625119276737289
+x = 1.1541300740744176 y = 0.8667793329150966
+Distance to obstacle 0.8410232726088603
 sim iteration 12
-x = 1.4375920745497606 y = -0.07911545321170894
-Distance to obstacle 0.4656227562732848
+x = 1.2206430181155687 y = 0.9635242701354683
+Distance to obstacle 0.949515886635077
 sim iteration 13
-x = 1.5550045665967187 y = -0.05525708498377195
-Distance to obstacle 0.5712482367425906
+x = 1.2870664257595341 y = 1.060752699283694
+Distance to obstacle 1.060350510865771
 sim iteration 14
-x = 1.6609597447246423 y = -0.025285602838257266
-Distance to obstacle 0.669292792663629
+x = 1.3554999658362838 y = 1.1603391875390923
+Distance to obstacle 1.1753893486183002
 sim iteration 15
-x = 1.7511859474177844 y = 0.008260905369033249
-Distance to obstacle 0.7546037538313901
+x = 1.4253443485933348 y = 1.2595253548101786
+Distance to obstacle 1.29157264832652
 sim iteration 16
-x = 1.8272176868076813 y = 0.04407809844459463
-Distance to obstacle 0.8279972731711182
+x = 1.4977447157942494 y = 1.3585507683603617
+Distance to obstacle 1.4093707570560694
 sim iteration 17
-x = 1.8893431391224569 y = 0.0803619528790796
-Distance to obstacle 0.8893432127778749
+x = 1.5717881436912609 y = 1.4545271199985945
+Distance to obstacle 1.5257223385915983
 sim iteration 18
-x = 1.9381144078118133 y = 0.11524325198724578
-Distance to obstacle 0.9387761868276941
+x = 1.650812307604107 y = 1.5510563896539755
+Distance to obstacle 1.64525015497434
 sim iteration 19
-x = 1.9745350291363943 y = 0.14699440400162858
-Distance to obstacle 0.9768350798274017
+x = 1.7238025240647215 y = 1.632462455631999
+Distance to obstacle 1.7492360522353632
 sim iteration 20
-x = 2.0000965962278805 y = 0.17426454129644442
-Distance to obstacle 1.0045292457327568
+x = 1.790904514178947 y = 1.700129168033681
+Distance to obstacle 1.838901521317778
 sim iteration 21
-x = 2.016378818028666 y = 0.19594719586895293
-Distance to obstacle 1.0229709937076523
+x = 1.8521879400532488 y = 1.7555124466336747
+Distance to obstacle 1.9155174861449988
 sim iteration 22
-x = 2.0250356657263446 y = 0.21127631874904032
-Distance to obstacle 1.0334077548941416
+x = 1.9077189066821547 y = 1.8001077615787933
+Distance to obstacle 1.9803870697210069
 sim iteration 23
-x = 2.0277456574352812 y = 0.2199062585591987
-Distance to obstacle 1.037224612878576
+x = 1.9576158749059012 y = 1.8354109898079456
+Distance to obstacle 2.0348289329068776
 sim iteration 24
-x = 2.0260459750371713 y = 0.22179629108886292
-Distance to obstacle 1.0357975338146626
+x = 2.002075777321084 y = 1.8628683443594398
+Distance to obstacle 2.0801453950052093
 sim iteration 25
-x = 2.021306532669504 y = 0.21722318999288756
-Distance to obstacle 1.0304839821876073
+x = 2.0413812258918624 y = 1.8838329833929406
+Distance to obstacle 2.117591775646985
 sim iteration 26
-x = 2.014702268371973 y = 0.20678093430887962
-Distance to obstacle 1.0225918534505638
+x = 2.0760216338776294 y = 1.8996146582663211
+Distance to obstacle 2.1484853347909194
 sim iteration 27
-x = 2.0071685583947234 y = 0.19129701683483652
-/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/./car.py:601: UserWarning: Legend does not support handles for PatchCollection instances.
+x = 2.106501102422661 y = 1.9113229145445219
+Distance to obstacle 2.1739811729088108
+sim iteration 28
+x = 2.1339026162098804 y = 1.9201732838242263
+Distance to obstacle 2.195629003327745
+sim iteration 29
+x = 2.159218077700348 y = 1.9270725252591592
+Distance to obstacle 2.214684913764319
+sim iteration 30
+x = 2.183195355660628 y = 1.9326155328121264
+Distance to obstacle 2.2320270618204003
+sim iteration 31
+x = 2.2063466784341825 y = 1.9371675046113703
+Distance to obstacle 2.248225266543039
+sim iteration 32
+x = 2.229026399059219 y = 1.9409513264755538
+Distance to obstacle 2.2636523220701625
+sim iteration 33
+x = 2.2513784058285142 y = 1.944074203937162
+Distance to obstacle 2.2784745968899567
+sim iteration 34
+x = 2.2733109506170033 y = 1.9465660582550988
+Distance to obstacle 2.2926654599944496
+sim iteration 35
+x = 2.2944645551114293 y = 1.9484180136745632
+Distance to obstacle 2.3060133996482755
+sim iteration 36
+x = 2.3143810950317554 y = 1.9496499078823675
+Distance to obstacle 2.318266687344666
+sim iteration 37
+x = 2.333079919513881 y = 1.9503744658106514
+Distance to obstacle 2.329513397993767
+sim iteration 38
+x = 2.350476158241054 y = 1.950693902749659
+Distance to obstacle 2.3397728616218796
+sim iteration 39
+x = 2.3663975828531596 y = 1.950717020290974
+Distance to obstacle 2.3490172170626114
+sim iteration 40
+x = 2.380786199265594 y = 1.9505655436374372
+Distance to obstacle 2.357293198695686
+sim iteration 41
+x = 2.3934985169701957 y = 1.9503702598275017
+Distance to obstacle 2.3646041204462813
+sim iteration 42
+x = 2.404722003806791 y = 1.9502375868238033
+Distance to obstacle 2.3711287493709388
+sim iteration 43
+x = 2.4147244529146152 y = 1.9502372348068115
+Distance to obstacle 2.377067851559339
+sim iteration 44
+x = 2.4237324453405895 y = 1.9504136072699119
+Distance to obstacle 2.3825814208033966
+sim iteration 45
+x = 2.43193342057563 y = 1.9507923759200032
+Distance to obstacle 2.3877941336797512
+sim iteration 46
+x = 2.439478169245115 y = 1.9513863054354326
+Distance to obstacle 2.3928006620567834
+sim iteration 47
+x = 2.4464834734149914 y = 1.9522002779462972
+Distance to obstacle 2.397670607452282
+sim iteration 48
+x = 2.45304408574892 y = 1.9532327182832308
+Distance to obstacle 2.4024563574473845
+sim iteration 49
+x = 2.4592558714071004 y = 1.9544713320552263
+Distance to obstacle 2.4072033938779267
+sim iteration 50
+x = 2.465189762953288 y = 1.9559029827279262
+Distance to obstacle 2.411942221672998
+sim iteration 51
+x = 2.4709048372478604 y = 1.9575120129895787
+Distance to obstacle 2.416694718039186
+sim iteration 52
+x = 2.476470234177763 y = 1.9592732649069606
+Distance to obstacle 2.4214818227274724
+sim iteration 53
+x = 2.4819749614799043 y = 1.961147820534115
+Distance to obstacle 2.4263261806270697
+sim iteration 54
+x = 2.487491523137386 y = 1.9630981951816568
+Distance to obstacle 2.431242007640648
+sim iteration 55
+x = 2.4930799019537035 y = 1.9650886546692068
+Distance to obstacle 2.4362376571168456
+sim iteration 56
+x = 2.4987890424006545 y = 1.9670861146792114
+Distance to obstacle 2.4413171623141654
+sim iteration 57
+x = 2.5046580777152982 y = 1.9690608298595962
+Distance to obstacle 2.446481476760552
+sim iteration 58
+x = 2.5107173256074873 y = 1.970986907633864
+Distance to obstacle 2.45172944578802
+sim iteration 59
+x = 2.5169890771271337 y = 1.9728426758580107
+Distance to obstacle 2.457058540153447
+sim iteration 60
+x = 2.5234882016942124 y = 1.9746109290521296
+Distance to obstacle 2.4624653799615963
+sim iteration 61
+x = 2.530222588685978 y = 1.9762790747231738
+Distance to obstacle 2.467946074397827
+sim iteration 62
+x = 2.537193442768028 y = 1.977839198997478
+Distance to obstacle 2.4734964001712654
+sim iteration 63
+x = 2.544395446653205 y = 1.9792880691033015
+Distance to obstacle 2.4791118390684925
+sim iteration 64
+x = 2.551828742687725 y = 1.9806208881227592
+Distance to obstacle 2.4847901074437115
+sim iteration 65
+x = 2.5595089215758344 y = 1.9818259849864912
+Distance to obstacle 2.4905333228935884
+sim iteration 66
+x = 2.567446757180816 y = 1.9828953045806255
+Distance to obstacle 2.4963436264180654
+sim iteration 67
+x = 2.5756486515706594 y = 1.9838241497814353
+Distance to obstacle 2.502223211160419
+sim iteration 68
+x = 2.5841170449183455 y = 1.9846108797457085
+Distance to obstacle 2.508174293311015
+sim iteration 69
+x = 2.5928507988966008 y = 1.985256577863674
+Distance to obstacle 2.514199041696467
+sim iteration 70
+x = 2.6018455602055006 y = 1.9857647018171907
+Distance to obstacle 2.5202994809323385
+sim iteration 71
+x = 2.6110941090074884 y = 1.986140727019632
+Distance to obstacle 2.526477381146155
+sim iteration 72
+x = 2.620586695375283 y = 1.98639179337838
+Distance to obstacle 2.532734145258457
+sim iteration 73
+x = 2.630311365424385 y = 1.9865263638632549
+Distance to obstacle 2.5390707027270087
+sim iteration 74
+x = 2.64025427762777 y = 1.9865539018395575
+Distance to obstacle 2.5454874165949053
+sim iteration 75
+x = 2.6504000089045143 y = 1.9864845725895879
+Distance to obstacle 2.5519840087119063
+sim iteration 76
+x = 2.660731849431025 y = 1.98632897295549
+Distance to obstacle 2.5585595061832285
+sim iteration 77
+x = 2.6712320847258315 y = 1.986097891636191
+Distance to obstacle 2.5652122104901722
+sim iteration 78
+x = 2.6818822633796526 y = 1.9858021014000569
+Distance to obstacle 2.571939689355865
+sim iteration 79
+x = 2.6926634488085845 y = 1.9854521833601126
+Distance to obstacle 2.578738790314599
+sim iteration 80
+x = 2.703556453563002 y = 1.9850583825170123
+Distance to obstacle 2.585605674087959
+sim iteration 81
+x = 2.7145420549905315 y = 1.984630493012973
+Distance to obstacle 2.592535865265326
+sim iteration 82
+x = 2.7256011913920246 y = 1.9841777709553208
+Distance to obstacle 2.5995243174108555
+sim iteration 83
+x = 2.736715138191703 y = 1.9837088722514848
+Distance to obstacle 2.6065654895462282
+sim iteration 84
+x = 2.7478656640376955 y = 1.983231812633118
+Distance to obstacle 2.613653430956623
+sim iteration 85
+x = 2.759035167133235 y = 1.98275394691663
+Distance to obstacle 2.620781871402424
+sim iteration 86
+x = 2.770206792453189 y = 1.9822819645298688
+/home/jeff/trustworthroboticsgroup/mympx/mpx/mpx/examples/car.py:635: UserWarning: Legend does not support handles for PatchCollection instances.
 See: https://matplotlib.org/stable/tutorials/intermediate/legend_guide.html#implementing-a-custom-legend-handler
   ax.legend(loc="best")
-Distance to obstacle 1.013299329406291
-sim iteration 28
-x = 1.9994333514555118 y = 0.17189719193892058
-Distance to obstacle 1.0036493998841705
-sim iteration 29
-x = 1.9920221260943796 y = 0.14998457364295775
-Distance to obstacle 0.9944876767505969
-sim iteration 30
-x = 1.9852297001219572 y = 0.1269629267506751
-Distance to obstacle 0.9863483555475677
-sim iteration 31
-x = 1.9792504415170995 y = 0.10457903434639822
-Distance to obstacle 0.9795588579257684
-sim iteration 32
-x = 1.9741526620000374 y = 0.08453014382566293
-Distance to obstacle 0.9741631953039698
-sim iteration 33
-x = 1.9698948500928393 y = 0.0680725971534561
-Distance to obstacle 0.9699681866820555
-sim iteration 34
-x = 1.9663804221478711 y = 0.05591530885140444
-Distance to obstacle 0.9666805018507515
-sim iteration 35
-x = 1.9634905606290414 y = 0.048185118878131046
-Distance to obstacle 0.9640156881929168
-sim iteration 36
-x = 1.9610953287942055 y = 0.04444326137807586
-Distance to obstacle 0.9617528334720256
-sim iteration 37
-x = 1.9590707312229207 y = 0.04391563605354797
-Distance to obstacle 0.9597493156079289
-sim iteration 38
-x = 1.9572791786403525 y = 0.04546802115792256
-Distance to obstacle 0.9579018130377964
-sim iteration 39
-x = 1.9555661827860107 y = 0.04771831923494646
-Distance to obstacle 0.9561113097318975
-sim iteration 40
-x = 1.9538514393619475 y = 0.04994452392980105
-Distance to obstacle 0.9543248398814029
-sim iteration 41
-x = 1.9521398987779381 y = 0.05218631278464664
-Distance to obstacle 0.952546055601185
-sim iteration 42
-x = 1.950428726359782 y = 0.05441685887818589
-Distance to obstacle 0.9507729807895973
-sim iteration 43
-x = 1.948707303691247 y = 0.05655049051896669
-Distance to obstacle 0.9489970640481545
-sim iteration 44
-x = 1.9469828390145987 y = 0.058647801629823804
-Distance to obstacle 0.9472235289325264
-sim iteration 45
-x = 1.9452584632952794 y = 0.06073368883312602
-Distance to obstacle 0.9454547864267925
-sim iteration 46
-x = 1.9435343276365722 y = 0.06280953944621064
-Distance to obstacle 0.9436909130444405
-sim iteration 47
-x = 1.9418061251413345 y = 0.06484628387422595
-Distance to obstacle 0.9419280293452126
-sim iteration 48
-x = 1.9400737894054212 y = 0.06684615261246926
-Distance to obstacle 0.9401658115610048
-sim iteration 49
-x = 1.938336473105954 y = 0.06880629044899364
-Distance to obstacle 0.9384032373635723
-sim iteration 50
-x = 1.9365902537022752 y = 0.07070518217300206
-Distance to obstacle 0.9366363739298882
-sim iteration 51
-x = 1.9348290130056423 y = 0.07251013860042142
-Distance to obstacle 0.9348590169543685
-sim iteration 52
-x = 1.9330468566673822 y = 0.07419246899675129
-Distance to obstacle 0.9330649302986562
-sim iteration 53
-x = 1.9312363207359715 y = 0.0757166357124864
-Distance to obstacle 0.9312461716793733
-sim iteration 54
-x = 1.9293876078708476 y = 0.07703648349717969
-Distance to obstacle 0.9293923327066772
-sim iteration 55
-x = 1.927488792712833 y = 0.07809706627109077
-Distance to obstacle 0.9274907448404459
-sim iteration 56
-x = 1.9255282230803006 y = 0.07884776965870183
-Distance to obstacle 0.9255289403108571
-sim iteration 57
-x = 1.9234915865122737 y = 0.07922656905942975
-Distance to obstacle 0.9234919103892444
-sim iteration 58
-x = 1.9213786521907765 y = 0.07924554423542525
-Distance to obstacle 0.9213789610775757
-sim iteration 59
-x = 1.9191972154284342 y = 0.07895537686301483
-Distance to obstacle 0.9191978090100551
-sim iteration 60
-x = 1.9169525216127623 y = 0.07839123806399521
-Distance to obstacle 0.9169539328706596
-sim iteration 61
-x = 1.9146492523909469 y = 0.07758362199597868
-Distance to obstacle 0.9146524442551807
-sim iteration 62
-x = 1.9122915082160743 y = 0.07655872793821789
-Distance to obstacle 0.9122979986367189
-sim iteration 63
-x = 1.9098828066097993 y = 0.07533883126300499
-Distance to obstacle 0.9098947457031061
-sim iteration 64
-x = 1.9074260898308866 y = 0.07394262928300321
-Distance to obstacle 0.9074463070869677
-sim iteration 65
-x = 1.904923738577481 y = 0.0723855597261151
-Distance to obstacle 0.9049557736937921
-sim iteration 66
-x = 1.9023775893728698 y = 0.07068009194140731
-Distance to obstacle 0.9024257168812357
-sim iteration 67
-x = 1.8997889538347195 y = 0.06883599140942254
-Distance to obstacle 0.8998582091256319
-sim iteration 68
-x = 1.897158638403658 y = 0.06686055817348481
-Distance to obstacle 0.8972548508611241
-sim iteration 69
-x = 1.8944869633876213 y = 0.06475883975031052
-Distance to obstacle 0.8946168010026218
-sim iteration 70
-x = 1.8917737803938317 y = 0.0625338190024192
-Distance to obstacle 0.8919448093220489
-sim iteration 71
-x = 1.8890184873867726 y = 0.060186577384317874
-Distance to obstacle 0.8892392493762367
-sim iteration 72
-x = 1.8862200407387624 y = 0.057716433913876715
-Distance to obstacle 0.8865001511136522
-sim iteration 73
-x = 1.8833769637377036 y = 0.055121060168827334
-Distance to obstacle 0.8837272326400082
-sim iteration 74
-x = 1.88048735109057 y = 0.052396571563300416
-Distance to obstacle 0.8809199309199154
-sim iteration 75
-x = 1.8775488690163185 y = 0.049537595117904815
-Distance to obstacle 0.8780774314506782
-sim iteration 76
-x = 1.87455875056241 y = 0.04653731389633513
-Distance to obstacle 0.8751986971805636
-sim iteration 77
-x = 1.8715160854651076 y = 0.04339634027248203
-Distance to obstacle 0.8722844232988874
-sim iteration 78
-x = 1.8684248805109793 y = 0.04013394150281223
-Distance to obstacle 0.8693394479204368
-sim iteration 79
-x = 1.8652901085943479 y = 0.03677222220043537
-Distance to obstacle 0.8663692127521077
-sim iteration 80
-x = 1.8621165782775717 y = 0.033331736347976176
-Distance to obstacle 0.8633787820958558
-sim iteration 81
-x = 1.858909004023527 y = 0.029831768129632934
-Distance to obstacle 0.8603729009456806
-sim iteration 82
-x = 1.855672076283467 y = 0.026290601439347323
-Distance to obstacle 0.8573560530054049
-sim iteration 83
-x = 1.8524105314304757 y = 0.022725780235553647
-Distance to obstacle 0.8543325174328859
-sim iteration 84
-x = 1.8491292214552102 y = 0.019154361420576346
-Distance to obstacle 0.8513064233654467
-sim iteration 85
-x = 1.8458331832229944 y = 0.015593161437965903
-Distance to obstacle 0.8482818014638175
-sim iteration 86
-x = 1.842527706933447 y = 0.012058997295267932
-Distance to obstacle 0.8452626318482656
+Distance to obstacle 2.6279443140571708
 sim iteration 87
-x = 1.8392184032298924 y = 0.008568922225345681
-Distance to obstacle 0.8422528879094324
+x = 2.781364530811814 y = 1.9818218984084144
+Distance to obstacle 2.635134128801199
 sim iteration 88
-x = 1.8359152112386652 y = 0.005153762737226995
-Distance to obstacle 0.8392593160713663
+x = 2.7924933010068655 y = 1.9813791445089537
+Distance to obstacle 2.64234464385114
 sim iteration 89
-x = 1.8326336630773536 y = 0.0018618339764488753
-Distance to obstacle 0.8362920481979582
+x = 2.803579016467609 y = 1.9809584893819567
+Distance to obstacle 2.649569234072995
 sim iteration 90
-x = 1.8293899102390954 y = -0.001258093994112484
-Distance to obstacle 0.8333609668360827
+x = 2.8146086379785946 y = 1.9805641434738832
+Distance to obstacle 2.6568014046900563
 sim iteration 91
-x = 1.8262007045674862 y = -0.004156710807785869
-Distance to obstacle 0.8304757408869905
+x = 2.8255702141385064 y = 1.9801997780754412
+Distance to obstacle 2.6640348694402824
 sim iteration 92
-x = 1.8230833634021129 y = -0.006784092032794035
-Distance to obstacle 0.8276458794311073
+x = 2.836452911247286 y = 1.9798685640845932
+Distance to obstacle 2.671263622548747
 sim iteration 93
-x = 1.8200557175412255 y = -0.009089639713067128
-Distance to obstacle 0.8248808057993945
+x = 2.847247034299668 y = 1.9795732110013313
+Distance to obstacle 2.678482004151406
 sim iteration 94
-x = 1.8171360407901656 y = -0.011022040844118348
-Distance to obstacle 0.8221899543765148
+x = 2.8579440407046266 y = 1.9793160048084724
+Distance to obstacle 2.68568475903188
 sim iteration 95
-x = 1.8143429600605956 y = -0.012529248387290777
-Distance to obstacle 0.8195828929445573
+x = 2.8685365482537923 y = 1.979098843613913
+Distance to obstacle 2.6928670887114
 sim iteration 96
-x = 1.8116953452770523 y = -0.013558490388427692
-Distance to obstacle 0.8170694735872799
+x = 2.879018338733336 y = 1.9789232701320454
+Distance to obstacle 2.7000246970640345
 sim iteration 97
-x = 1.8092070289749318 y = -0.014072614461543226
-Distance to obstacle 0.8146567820463205
+x = 2.889384358418679 y = 1.9787905002642028
+Distance to obstacle 2.707153829717085
 sim iteration 98
-x = 1.8069128155291292 y = -0.013967419192293542
-Distance to obstacle 0.8123657844436869
+x = 2.8996307165146855 y = 1.9787014472004285
+Distance to obstacle 2.7142513075437824
 sim iteration 99
-x = 1.8048581796948262 y = -0.013104322574039953
-Distance to obstacle 0.8102253416819546
-Average Time (ms): 14904.25632699771
-Min time (ms): 14904.25632699771
+x = 2.909754682410335 y = 1.97865674060906
+Distance to obstacle 2.7213145545668076
+Average Time (ms): 6373.7823349983955
+Min time (ms): 6373.7823349983955
 Saved replay to replay.mp4
