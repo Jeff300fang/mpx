@@ -193,7 +193,12 @@ class BatchedMPCControllerWrapper:
         return data
 
 class MPCControllerWrapper:
-    def __init__(self, config, sls_config, admm_config, constraints, num_constraints, disturbance, limited_memory=False):
+    def __init__(self,
+                 config,
+                 sls_config, sqp_config, admm_config,
+                 constraints, obstacles, num_constraints,
+                 disturbance,
+                 X_in, U_in, limited_memory=False):
         """
         Initializes the MPC controller wrapper.
 
@@ -206,6 +211,7 @@ class MPCControllerWrapper:
         jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
 
         self.sls_config = sls_config
+        self.sqp_config = sqp_config
         self.admm_config = admm_config
         self.model = mujoco.MjModel.from_xml_path(config.model_path)
         self.data = mujoco.MjData(self.model)
@@ -233,12 +239,16 @@ class MPCControllerWrapper:
         for name in config.body_name:
             self.body_id.append(mjx.name2id(mjx_model,mujoco.mjtObj.mjOBJ_BODY,name))
         # Trajectory warm-start variables (used between MPC calls)
-        self.U0 = jnp.tile(config.u_ref, (config.N, 1))
-        self.X0 = jnp.tile(self.initial_state, (config.N + 1, 1))
+        # self.U0 = jnp.tile(config.u_ref, (config.N, 1))
+        # self.X0 = jnp.tile(self.initial_state, (config.N + 1, 1))
+        self.U0 = U_in
+        self.X0 = X_in
         self.V0 = jnp.zeros((config.N + 1, config.n))
         self.w = jnp.zeros((config.N + 1, num_constraints))
         self.y = jnp.zeros((config.N + 1, num_constraints))
-        self.rho = jnp.asarray(0.1, dtype=jnp.float32)
+        self.rho = jnp.asarray(0.1)
+        num_obstacles = obstacles.shape[0]
+        self.h_ct_ws = jnp.zeros((config.N + 1, num_constraints - num_obstacles))
 
         # Define cost, hessian approximation, and dynamics functions for MPC.
         self.cost = partial(config.cost,config.n_joints, config.n_contact, config.N)
@@ -248,8 +258,20 @@ class MPCControllerWrapper:
                                 config.n_joints, config.dt)
         self.constraints = constraints
         self.disturbance = disturbance
+        self.obstacles = obstacles
 
-        work = partial(optimizers.mpc, self.sls_config, self.admm_config, self.cost, self.dynamics, hessian_approx, limited_memory, self.constraints, self.disturbance)
+        work = partial(
+            optimizers.mpc,
+            self.sls_config,
+            self.sqp_config,
+            self.admm_config,
+            self.cost,
+            self.dynamics,
+            hessian_approx,
+            limited_memory,
+            self.constraints,
+            self.disturbance
+        )
 
         reference_generator = partial(mpc_utils.reference_generator,
             config.use_terrain_estimation ,config.N, config.dt, config.n_joints, config.n_contact, robot_mass,foot0 = config.p_legs0, q0 = config.q0)
@@ -351,7 +373,7 @@ class MPCControllerWrapper:
         )
 
         # Execute the MPC optimization.
-        X, U, V, w, y, rho, backoffs = self._solve(
+        X, U, V, w, y, rho, backoffs, Phi_x, Phi_u = self._solve(
             reference,
             parameter,
             self.config.W,
@@ -361,9 +383,11 @@ class MPCControllerWrapper:
             self.V0,
             self.w,
             self.y,
-            self.rho
-            )
-
+            self.rho,
+            self.obstacles,
+            self.h_ct_ws
+        )
+        self.h_ct_ws = backoffs
         # # Warm-start for the next call: shift trajectories forward.
         self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
         self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
@@ -381,7 +405,7 @@ class MPCControllerWrapper:
         q = np.array(q_temp)
         dq = np.array(dq_temp)
 
-        return tau, q, dq 
+        return tau, q, dq, self.X0, self.U0, self.V0, backoffs, Phi_x, Phi_u 
 
     def reset(self,qpos,qvel):
         """

@@ -1,3 +1,5 @@
+from jax import config
+config.update("jax_enable_x64", True)
 
 import jax.numpy as jnp
 import jax
@@ -27,6 +29,25 @@ from mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers import SLSConfig
 # Set GPU device for JAX
 # gpu_device = jax.devices('gpu')[0]
 # jax.default_device(gpu_device)
+
+import imageio
+import numpy as np
+
+class VideoWriter:
+    def __init__(self, path: str, fps: int = 30):
+        self.path = path
+        self.fps = fps
+        self._writer = imageio.get_writer(path, fps=fps)
+
+    def add(self, frame: np.ndarray):
+        # frame: (H, W, 3) uint8
+        if frame.dtype != np.uint8:
+            frame = frame.astype(np.uint8)
+        self._writer.append_data(frame)
+
+    def close(self):
+        self._writer.close()
+
 
 logdir = "/tmp/jax_trace"
 
@@ -245,7 +266,7 @@ sls_config = SLSConfig(
     enable_fastsls=False,
 )
 sqp_config = SQPConfig(
-    max_sqp_iterations=1
+    max_sqp_iterations=19
 )
 inital_state = jnp.concatenate([config.p0, config.quat0,config.q0, jnp.zeros(6+config.n_joints),config.p_legs0,jnp.zeros(3*config.n_contact)])
 X_in = jnp.tile(config.u_ref, (config.N, 1))
@@ -279,50 +300,91 @@ mpc_time = 0
 mpc.robot_height = config.robot_height
 mpc.reset(env.mjData.qpos.copy(),env.mjData.qvel.copy())
 first = True
-while env.viewer.is_running():
- 
+
+qpos = env.mjData.qpos.copy()
+qvel = env.mjData.qvel.copy()
+contact_temp, _ = env.feet_contact_state()
+contact = np.array([contact_temp[robot_feet_geom_names[leg]] for leg in ['FL','FR','RL','RR']])
+
+video = VideoWriter("go2_run.mp4", fps=30) 
+ref_base_lin_vel = env._ref_base_lin_vel_H
+# ref_base_ang_vel =  np.array([0., 0., env._ref_base_ang_yaw_dot])
+ref_base_lin_vel = np.array([0.3, 0., 0.])
+ref_base_ang_vel =  np.array([0., 0., 0.])
+
+input = np.array([ref_base_lin_vel[0],ref_base_lin_vel[1],ref_base_lin_vel[2],
+                    ref_base_ang_vel[0],ref_base_ang_vel[1],ref_base_ang_vel[2],
+                    config.robot_height])
+tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u = mpc.run(qpos,qvel,input,contact)
+writer = imageio.get_writer("go2_run.mp4", fps=30)
+m = env.mjModel   # sometimes env.model or env._model
+d = env.mjData 
+fb_w = int(getattr(m.vis.global_, "offwidth", 640))
+fb_h = int(getattr(m.vis.global_, "offheight", 480))
+
+W = min(640, fb_w)
+H = min(480, fb_h)
+
+renderer = mujoco.Renderer(m, height=H, width=W)
+for i in range(config.N):
     qpos = env.mjData.qpos.copy()
     qvel = env.mjData.qvel.copy()
-    if (counter % (sim_frequency / mpc_frequency) == 0 or counter == 0):
+    tau = U[i, :config.n_joints]
+    q = X[i, 7:config.n_joints + 7]
+    tau_fb = 10*(q-qpos[7:7+config.n_joints]) -2*(qvel[6:6+config.n_joints])
+    print("Time step:", i, "/", config.N, ":", jnp.linalg.norm(qpos[:7] - X[i, :7]))
+    state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
+    env.render()
+    renderer.update_scene(d)
+    frame = renderer.render()          # (H, W, 3), uint8
+    writer.append_data(frame)
+
+writer.close()
+
+# while env.viewer.is_running():
+ 
+#     qpos = env.mjData.qpos.copy()
+#     qvel = env.mjData.qvel.copy()
+#     if (counter % (sim_frequency / mpc_frequency) == 0 or counter == 0):
     
  
-        ref_base_lin_vel = env._ref_base_lin_vel_H
-        # ref_base_ang_vel =  np.array([0., 0., env._ref_base_ang_yaw_dot])
-        ref_base_lin_vel = np.array([0.2, 0., 0.])
-        ref_base_ang_vel =  np.array([0., 0., 0.])
+#         ref_base_lin_vel = env._ref_base_lin_vel_H
+#         # ref_base_ang_vel =  np.array([0., 0., env._ref_base_ang_yaw_dot])
+#         ref_base_lin_vel = np.array([0.3, 0., 0.])
+#         ref_base_ang_vel =  np.array([0., 0., 0.])
 
-        input = np.array([ref_base_lin_vel[0],ref_base_lin_vel[1],ref_base_lin_vel[2],
-                           ref_base_ang_vel[0],ref_base_ang_vel[1],ref_base_ang_vel[2],
-                           config.robot_height])
+#         input = np.array([ref_base_lin_vel[0],ref_base_lin_vel[1],ref_base_lin_vel[2],
+#                            ref_base_ang_vel[0],ref_base_ang_vel[1],ref_base_ang_vel[2],
+#                            config.robot_height])
         
-        contact_temp, _ = env.feet_contact_state()
+#         contact_temp, _ = env.feet_contact_state()
         
-        contact = np.array([contact_temp[robot_feet_geom_names[leg]] for leg in ['FL','FR','RL','RR']])
+#         contact = np.array([contact_temp[robot_feet_geom_names[leg]] for leg in ['FL','FR','RL','RR']])
 
-        if counter != 0:
-            for i in range(delay):
-                qpos = env.mjData.qpos.copy()
-                qvel = env.mjData.qvel.copy()
-                # tau_fb = K@(x-np.concatenate([qpos,qvel]))
+#         if counter != 0:
+#             for i in range(delay):
+#                 qpos = env.mjData.qpos.copy()
+#                 qvel = env.mjData.qvel.copy()
+#                 # tau_fb = K@(x-np.concatenate([qpos,qvel]))
 
-                tau_fb = 10*(q-qpos[7:7+config.n_joints]) -2*(qvel[6:6+config.n_joints])
-                state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
-                counter += 1
-        start = timer()
-        tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u = mpc.run(qpos,qvel,input,contact)   
-        stop = timer()
-        print("Time taken for MPC: ", stop-start)   
-        render_obstacles(centers, radii)
-        # for i in range(4):
-        #     render_sphere(env.viewer,
-        #                   collision_point[3*i:3*i+3],
-        #                   0.2,
-        #                   np.array([1, 0, 0, 0.5]),
-        #                   ids[i])
+#                 tau_fb = 10*(q-qpos[7:7+config.n_joints]) -2*(qvel[6:6+config.n_joints])
+#                 state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
+#                 counter += 1
+#         start = timer()
+#         tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u = mpc.run(qpos,qvel,input,contact)   
+#         stop = timer()
+#         print("Time taken for MPC: ", stop-start)   
+#         render_obstacles(centers, radii)
+#         # for i in range(4):
+#         #     render_sphere(env.viewer,
+#         #                   collision_point[3*i:3*i+3],
+#         #                   0.2,
+#         #                   np.array([1, 0, 0, 0.5]),
+#         #                   ids[i])
 
-    tau_fb = 10*(q-qpos[7:7+config.n_joints])-2*(qvel[6:6+config.n_joints])
-    state, reward, is_terminated, is_truncated, info = env.step(action= tau + tau_fb)
+#     tau_fb = 10*(q-qpos[7:7+config.n_joints])-2*(qvel[6:6+config.n_joints])
+#     state, reward, is_terminated, is_truncated, info = env.step(action= tau + tau_fb)
 
-    # time.sleep(0.1)
-    counter += 1
-    env.render()
+#     # time.sleep(0.1)
+#     counter += 1
+#     env.render()

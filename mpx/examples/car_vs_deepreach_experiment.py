@@ -68,24 +68,26 @@ def wrap_to_pi(a: jnp.ndarray) -> jnp.ndarray:
 # Dubins car dynamics
 # x = [px, py, theta], u = [v, omega]
 # -----------------------------
+V_CONST = 0.2
 @jax.jit
 def dubins_step(x: jnp.ndarray, u: jnp.ndarray, dt: float) -> jnp.ndarray:
     px, py, th = x[0], x[1], x[2]
-    v, om = u[0], u[1]
+    om = u[0]
 
-    px_next = px + dt * v * jnp.cos(th)
-    py_next = py + dt * v * jnp.sin(th)
+    px_next = px + dt * V_CONST * jnp.cos(th)
+    py_next = py + dt * V_CONST * jnp.sin(th)
     th_next = wrap_to_pi(th + dt * om)
 
     return jnp.array([px_next, py_next, th_next], dtype=x.dtype)
 
-@jax.jit
+
 def dubins_step_with_disturbance(
     key: jax.Array,          # PRNGKey
     x: jnp.ndarray,          # (3,)
     u: jnp.ndarray,          # (2,)
     E: jnp.ndarray,          # (3,3)
     dt: float,
+    i: int
 ) -> tuple[jax.Array, jnp.ndarray]:
     """
     Simulates: x_{k+1} = f(x_k,u_k) + E w,   with ||w||_2 <= 1
@@ -94,24 +96,60 @@ def dubins_step_with_disturbance(
     Returns (key_next, x_next).
     """
     px, py, th = x
-    v, om = u
+    om = u[0]
 
     # Nominal Dubins step
-    px_next = px + dt * v * jnp.cos(th)
-    py_next = py + dt * v * jnp.sin(th)
+    px_next = px + dt * V_CONST * jnp.cos(th)
+    py_next = py + dt * V_CONST * jnp.sin(th)
     th_next = wrap_to_pi(th + dt * om)
     x_nom = jnp.array([px_next, py_next, th_next], dtype=x.dtype)
 
     # Sample w ~ Uniform(unit l2 ball in R^3)
-    key, key_dir, key_rad = jax.random.split(key, 3)
-    z = jax.random.normal(key_dir, (x.shape[0],), dtype=x.dtype)
-    z_norm = jnp.linalg.norm(z) + jnp.asarray(1e-12, dtype=x.dtype)
-    z = z / z_norm
+    # key, key_dir, key_rad = jax.random.split(key, 3)
+    # z = jax.random.normal(key_dir, (x.shape[0],), dtype=x.dtype)
+    # z_norm = jnp.linalg.norm(z) + jnp.asarray(1e-12, dtype=x.dtype)
+    # z = z / z_norm
 
-    n = jnp.asarray(x.shape[0], dtype=x.dtype)  # n = 3, but keep generic
-    r = jax.random.uniform(key_rad, (), minval=0.0, maxval=1.0, dtype=x.dtype) ** (1.0 / n)
+    # n = jnp.asarray(x.shape[0], dtype=x.dtype)  # n = 3, but keep generic
+    # r = jax.random.uniform(key_rad, (), minval=0.0, maxval=1.0, dtype=x.dtype) ** (1.0 / n)
     # w = r * z  # ||w||_2 <= 1
-    w = jnp.array([0.0, -1.0, 0])
+
+    # Stronger
+    key, key_dir, key_rad = jax.random.split(key, 3)
+
+    z = jax.random.normal(key_dir, (x.shape[0],), dtype=x.dtype)
+    z = z / (jnp.linalg.norm(z) + jnp.asarray(1e-12, dtype=x.dtype))
+
+    n = jnp.asarray(x.shape[0], dtype=x.dtype)
+    a = jnp.asarray(1.0, dtype=x.dtype)
+    b = jnp.asarray(1.0, dtype=x.dtype)
+
+    u = jax.random.uniform(key_rad, (), dtype=x.dtype)
+    r = (a**n + (b**n - a**n) * u) ** (1.0 / n)
+
+    w = r * z
+    jax.debug.print("{}", w)
+    if i == 5:
+        w = jnp.array([0.0, 1.0, 0])
+    if i == 6:
+        w = jnp.array([0.0, -1.0, 0])
+    if i == 7:
+        w = jnp.array([1.0, 0.0, 0])
+    if i == 8:
+        w = jnp.array([-1.0, 0.0, 0])
+    if i == 9:
+        w = jnp.array([0.0, 0.0, 1.0])
+    if i == 10:
+        w = jnp.array([0.0, 0.0, -1.0])
+    if i == 11:
+        w = jnp.array([0.707, 0.707, 0.0])
+    if i == 12:
+        w = jnp.array([-0.707, 0.707, 0.0])
+    if i == 13:
+        w = jnp.array([0.707, -0.707, 0.0])
+    if i == 14:
+        w = jnp.array([-0.707, -0.707, 0.0])
+    # w = jnp.array([0.0, 1.0, 0])
 
     # Additive disturbance
     x_next = x_nom + E @ w
@@ -131,20 +169,19 @@ def cost(W, reference, x, u, t):
     """
     W = [wx, wy, wtheta, wv, womega]
     """
-    wx, wy, wtheta, wv, womega = W
+    wx, wy, wtheta, womega = W
     xref = reference[t]
 
     dx = x[0] - xref[0]
     dy = x[1] - xref[1]
     dth = wrap_to_pi(x[2] - xref[2])
 
-    v, om = u[0], u[1]
+    om = u[0]
 
     return (
         wx * (dx * dx)
         + wy * (dy * dy)
         + wtheta * (dth * dth)
-        + wv * (v * v)
         + womega * (om * om)
     )
 
@@ -202,73 +239,6 @@ class MPCConfig:
     W: jnp.ndarray
     u_ref: jnp.ndarray
 
-@partial(jax.jit, static_argnames=("N",))
-def build_forward_reference(
-    x0: jnp.ndarray,   # (3,)
-    N: int,
-    dt: float,
-) -> tuple[jnp.ndarray, jnp.ndarray]:
-    """
-    Build a horizon reference assuming constant controls:
-      v = v_ref, omega = om_ref
-    Returns:
-      X_ref: (N+1, 3)
-      U_ref: (N, 2)
-    """
-    v_ref: float = 1.0
-    om_ref: float = 0.0
-    u = jnp.array([v_ref, om_ref], dtype=x0.dtype)
-    U_ref = jnp.broadcast_to(u, (N, 2))
-
-    def step(carry, _):
-        x = carry
-        x_next = dubins_step(x, u, dt)
-        return x_next, x_next
-
-    # produce x1..xN, then prepend x0
-    _, xs = jax.lax.scan(step, x0, xs=None, length=N)
-    X_ref = jnp.concatenate([x0[None, :], xs], axis=0)
-    X_ref = X_ref.at[:, 1].set(0.0)
-    return X_ref, U_ref
-
-
-def dyn_defect_from_predictions(
-    X_pred: jnp.ndarray,   # (N+1, 3)
-    U_pred: jnp.ndarray,   # (N, 2)
-    dt: float,
-) -> tuple[jnp.ndarray, jnp.ndarray]:
-    """
-    Returns:
-      err      : (N, 3)  raw defect X[k+1] - f(X[k], U[k])
-      err_wrapped : (N, 3) where theta component is wrapped to (-pi, pi]
-    """
-    # predicted next via dynamics applied to predicted (x,u)
-    X_next_hat = jax.vmap(lambda x, u: dubins_step(x, u, dt))(X_pred[:-1], U_pred)
-
-    err = X_pred[1:] - X_next_hat
-
-    # wrap theta error (component 2)
-    err_wrapped = err.at[:, 2].set(wrap_to_pi(err[:, 2]))
-    return err, err_wrapped
-
-
-def summarize_dyn_defect(err_wrapped: jnp.ndarray) -> dict:
-    """
-    Computes norms per step and summary stats.
-    """
-    # per-step L2 norm (over state components)
-    step_l2 = jnp.linalg.norm(err_wrapped, axis=1)  # (N,)
-    # per-component max abs
-    comp_max = jnp.max(jnp.abs(err_wrapped), axis=0)  # (3,)
-
-    return {
-        "step_l2": step_l2,
-        "max_step_l2": jnp.max(step_l2),
-        "mean_step_l2": jnp.mean(step_l2),
-        "median_step_l2": jnp.median(step_l2),
-        "comp_max_abs": comp_max,
-    }
-
 def make_state_box_constraints(
     x_min: jnp.ndarray,
     x_max: jnp.ndarray,
@@ -295,14 +265,14 @@ def make_state_box_constraints(
 def main():
     # Dimensions
     n = 3      # [px, py, theta]
-    nu = 2     # [v, omega]
+    nu = 1     # [omega]
 
     # Horizon and dt
-    N = 100
-    dt = 0.025
+    N = 110
+    dt = 0.1
 
-    # Weights: (x, y, theta, v, omega)
-    W = jnp.array([5.0, 5.0, 0.1, 0.1, 0.1])
+    # Weights: (x, y, theta, omega)
+    W = jnp.array([25.0, 10.0, 0.01, 0.1])
 
     cfg = MPCConfig(
         n=n,
@@ -326,16 +296,15 @@ def main():
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 40,
+        max_sqp_iterations = 50,
     )
 
     parameter = dt
 
-    v_max = 5.0
-    om_max = 10.0
+    om_max = 3.6
 
-    u_min = jnp.array([-v_max, -om_max])
-    u_max = jnp.array([v_max,  om_max])
+    u_min = jnp.array([-om_max])
+    u_max = jnp.array([om_max])
 
     constraints_u = make_control_box_constraints(u_min, u_max)
     x_max = jnp.array([15.0, 15.0, jnp.inf], dtype=jnp.float64)
@@ -343,34 +312,15 @@ def main():
 
     constraints_x = make_state_box_constraints(x_min, x_max)
 
-    centers = jnp.array([[1.0, 0.04]])   # (K,2)
-    radii   = jnp.array([0.15])         # (K,)
-    K = centers.shape[0]
-
-    # Inflate a bit if you want “safety margin”
-    obstacle_constraints = partial(
-        outside_circle_constraints,
-        centers=centers,
-        radii=radii,
-    )  # returns (K,)
-
     constraints_all = combine_constraints(constraints_x, constraints_u)
-    # constraints_all = combine_constraints(constraints_all, obstacle_constraints)
-    # constraints_all = combine_constraints(constraints_u, obstacle_constraints)
-    # constraints_all = constraints_u
-    # Total constraint count:
-    obstacles = jnp.array([[1.0, 0.08, 0.15], [1.5, -0.4, 0.15], [2.0, 0.12, 0.15], [3.0, 0.1, 0.15], [4.0, -0.6, 0.15], [2.75, -0.7, 0.15]])
-    # obstacles = jnp.array([[1.0, 0.08, 0.15]])
+    obstacles = jnp.array([[0.0, 0.0, 0.3]])
     n_obs = obstacles.shape[0]
-    # obstacles = jnp.array([])
     centers = obstacles[:, :2]
     radii   = obstacles[:, 2]
     nc = 2 * nu + 2 * n + n_obs
-    # nc = 2 * nu + 1
-    # nc = 2 * nu
 
     # disturbance = make_zero_disturbance(n=n)
-    E_mag = 0.2
+    E_mag = 0.025
     alpha_sim = E_mag * dt
     disturbance = make_constant_disturbance(n=n, alpha=alpha_sim)
     controller = GenericMPCControllerWrapper(
@@ -393,14 +343,10 @@ def main():
     # -----------------------------
     # Initial condition
     # -----------------------------
-    x = jnp.array([0.0, 0.0, 0.0])
-    # X_ref, U_ref = build_forward_reference(x, N, dt)
-    # print(X_ref)
-    x_goal = jnp.array([5.0, 0.0, 0.0])  # shape (nx,)
+    x = jnp.array([-0.75, -0.5, 0.0])
+    x_goal = jnp.array([0.75, 0.5, 0.0])  # shape (nx,)
     X_ref = jnp.tile(x_goal[None, :], (N + 1, 1))  # shape (N+1, nx)
     reference = X_ref
-    # Closed-loop rollout
-    T_steps = min(int(5.0 / dt), 100)  # simulate ~5s (cap)
     T_steps = N
     xs = []
     us = []
@@ -408,52 +354,12 @@ def main():
     total_time = 0.0
     min_time = float("inf")
 
-    # Compilation warmup
-    # controller.run(x0=x, reference=reference, parameter=parameter)
-
     key = jax.random.PRNGKey(0)
     E_sim = alpha_sim * jnp.eye(3)
 
     plans_xy = []
     lowers_xy = []
     uppers_xy = []
-
-    # Fully mpc closed loop
-    # for k in range(T_steps):
-    #     print(f"sim iteration {k}")
-    #     start = time.perf_counter()
-    #     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    #     u0.block_until_ready()
-    #     u0 = jnp.clip(u0, u_min * 2, u_max * 2)
-    #     end = time.perf_counter()
-    #     tube = get_trajectory_tubes(Phi_x)
-    #     print(tube)
-    #     plan_xy = X_pred[:, :2]                     # (N+1, 2)
-    #     lower = plan_xy - tube[:, :2]
-    #     upper = plan_xy + tube[:, :2]
-
-    #     plans_xy.append(plan_xy)
-    #     lowers_xy.append(lower)
-    #     uppers_xy.append(upper)
-        
-    #     jax.debug.print("u = {}", u0)
-    #     dt_run = end - start
-    #     total_time += dt_run
-    #     min_time = min(min_time, dt_run)
-
-    #     # apply
-    #     key, x, w = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-    #     # x = dubins_step(x, u0, dt)
-    #     # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-    #     jax.debug.print("x = {} y = {}", x[0], x[1])
-    #     # jax.debug.print("x_disturb = {} y_disturb = {}", x_disturb[0], x_disturb[1])
-    #     jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)
-    #     # if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
-    #     if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
-    #         jax.debug.print("Crashed!")
-    #         # break
-    #     xs.append(x)
-    #     us.append(u0)
 
     jax.debug.print("Warmup complete.")
     start = time.perf_counter()
@@ -475,7 +381,7 @@ def main():
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 12,
+        max_sqp_iterations = 50,
     )
     controller = GenericMPCControllerWrapper(
         sls_cfg,
@@ -493,157 +399,104 @@ def main():
         X_in=X_pred,
         U_in=U_pred,
     )
-    
-    # for k in range(T_steps + 1):
-    #     print(f"sim iteration {k}")
-    #     start = time.perf_counter()
-    #     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    #     u0.block_until_ready()
-    #     end = time.perf_counter()
-    #     tube = get_trajectory_tubes(Phi_x)
-    #     plan_xy = X_pred[:, :2]                     # (N+1, 2)
-    #     lower = plan_xy - tube[:, :2]
-    #     upper = plan_xy + tube[:, :2]
-
-    #     plans_xy.append(plan_xy)
-    #     lowers_xy.append(lower)
-    #     uppers_xy.append(upper)
-        
-    #     # jax.debug.print("u = {}", u0)
-    #     if k != 0:
-    #         dt_run = end - start
-    #         total_time += dt_run
-    #         min_time = min(min_time, dt_run)
-
-    #     # apply
-    #     key, x, w = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-    #     # x = dubins_step(x, u0, dt)
-    #     # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-    #     jax.debug.print("x = {} y = {}", x[0], x[1])
-    #     # jax.debug.print("x_disturb = {} y_disturb = {}", x_disturb[0], x_disturb[1])
-    #     jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)
-    #     # if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
-    #     if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
-    #         jax.debug.print("Crashed!")
-    #         # break
-    #     xs.append(x)
-    #     us.append(u0)
-
+    N_ROLLOUTS = 15
     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    disturbance_history = [jnp.zeros(X_pred[0].shape)]
-    disturbed_distance = []
-    disturbed_distance_y = []
-    disturbed_distance_th = []
-    tube_size = []
-    tube_size_y = []
-    tube_size_th = []
-    for k in range(T_steps):
-        print(f"sim iteration {k}")
-        tube = get_trajectory_tubes(Phi_x)
-        tube_size.append(tube[k + 1, 0])
-        tube_size_y.append(tube[k + 1, 1])
-        tube_size_th.append(tube[k + 1, 2])
-        plan_xy = X_pred[:, :2]                     # (N+1, 2)
-        lower = plan_xy - tube[:, :2]
-        upper = plan_xy + tube[:, :2]
+    tube = get_trajectory_tubes(Phi_x)
+    plan_xy = X_pred[:, :2]
+    lower = plan_xy - tube[:, :2]
+    upper = plan_xy + tube[:, :2]
 
-        plans_xy.append(plan_xy)
-        lowers_xy.append(lower)
-        uppers_xy.append(upper)
-        
-        dt_run = end - start
-        total_time += dt_run
-        min_time = min(min_time, dt_run)
-        disturbance_feedback = jnp.zeros((nu,))
-        for j in range(k + 1):
-            disturbance_feedback += Phi_u[k, j] @ disturbance_history[j]
-        u0 = U_pred[k] + disturbance_feedback
-        # apply
-        key, x, w = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-        disturbed_distance.append(abs(X_pred[k + 1, 0] - x[0]))
-        disturbed_distance_y.append(abs(X_pred[k + 1, 1] - x[1]))
-        dth = wrap_to_pi(X_pred[k + 1, 2] - x[2])
-        disturbed_distance_th.append(jnp.abs(dth))
-        disturbance_history.append(w)
-        # x = dubins_step(x, u0, dt)
-        # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-        jax.debug.print("x = {} y = {}", x[0], x[1])
-        # jax.debug.print("x_disturb = {} y_disturb = {}", x_disturb[0], x_disturb[1])
-        jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)
-        if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
-            jax.debug.print("Crashed!")
-            break
-        xs.append(x)
-        us.append(u0)
+    plans_xy.append(plan_xy)
+    lowers_xy.append(lower)
+    uppers_xy.append(upper)
+    xs = np.zeros((N_ROLLOUTS, T_steps, 3))
+    for i in range(N_ROLLOUTS):
+        disturbance_history = [jnp.zeros(X_pred[0].shape)]
+        x = jnp.array([-0.75, -0.5, 0.0])
+        for k in range(T_steps):
+            print(f"sim iteration {k}")
+            disturbance_feedback = jnp.zeros((nu,))
+            for j in range(k + 1):
+                disturbance_feedback += Phi_u[k, j] @ disturbance_history[j]
+            u0 = U_pred[k] + disturbance_feedback
+            # apply
+            key, x, w = dubins_step_with_disturbance(key, x, u0, E_sim, dt, i)
+            disturbance_history.append(w)
+            xs[i, k] = x
 
-    plans_xy = jnp.stack(plans_xy, axis=0)   # (T_steps, N+1, 2)
-    lowers_xy = jnp.stack(lowers_xy, axis=0) # (T_steps, N+1, 2)
-    uppers_xy = jnp.stack(uppers_xy, axis=0) # (T_steps, N+1, 2)
-    xs = jnp.stack(xs, axis=0)               # (T_steps, 3) (post-step states)
-    us = jnp.stack(us, axis=0)
-    print("Average Time (ms):", total_time / T_steps* 1000)
-    print("Min time (ms):", min_time * 1000)
-    save_replay(
-        xs=xs,                         # note: post-step states (length T_steps)
-        centers=centers,
-        radii=radii,
-        plans_xy=plans_xy,
+    # xs = jnp.stack(xs, axis=0)               # (T_steps, 3) (post-step states)
+    # us = jnp.stack(us, axis=0)
+    
+    plot_rollouts_tubes_centers(
+        xs=xs,                      # (N_ROLLOUTS, T_steps, 3)
+        centers=centers,            # (n_obs, 2)
+        radii=radii,                # (n_obs,)
+        plans_xy=plans_xy,          # (n_steps, N+1, 2) -> in your code n_steps==1 unless you append every MPC step
         lowers_xy=lowers_xy,
         uppers_xy=uppers_xy,
-        filename="replay.mp4",
-        dt=dt,
-        fps=int(round(1.0 / dt)),
-        box_stride=1,
+        step_idx=0,                 # use 0 since you only appended once
+        tube_stride=1,
+        filename="rollouts_tubes_centers.png",
+        show_plan=False
     )
 
-    import numpy as np
-    import matplotlib.pyplot as plt
+    # save_replay(
+    #     xs=xs,                         # note: post-step states (length T_steps)
+    #     centers=centers,
+    #     radii=radii,
+    #     plans_xy=plans_xy,
+    #     lowers_xy=lowers_xy,
+    #     uppers_xy=uppers_xy,
+    #     filename="replay.mp4",
+    #     dt=dt,
+    #     fps=60,
+    #     box_stride=1,
+    # )
 
-    # convert to numpy
-    dx_np      = np.asarray(jnp.stack(disturbed_distance))
-    dy_np      = np.asarray(jnp.stack(disturbed_distance_y))
-    dth_np     = np.asarray(jnp.stack(disturbed_distance_th))   # NEW
+    # import numpy as np
+    # import matplotlib.pyplot as plt
 
-    tube_x_np  = np.asarray(jnp.stack(tube_size))
-    tube_y_np  = np.asarray(jnp.stack(tube_size_y))
-    tube_th_np = np.asarray(jnp.stack(tube_size_th))            # NEW
+    # # convert to numpy
+    # dx_np      = np.asarray(jnp.stack(disturbed_distance))
+    # dy_np      = np.asarray(jnp.stack(disturbed_distance_y))
+    # dth_np     = np.asarray(jnp.stack(disturbed_distance_th))   # NEW
 
-    t = np.arange(dx_np.shape[0]) * dt
+    # t = np.arange(dx_np.shape[0]) * dt
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
+    # fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
 
-    # ---- X direction ----
-    ax1.plot(t, tube_x_np, label="tube size (x)")
-    ax1.plot(t, dx_np,     label="|x - x_nominal|")
-    ax1.set_ylabel("meters")
-    ax1.set_title("X-direction: Deviation vs Tube Size")
-    ax1.grid(True)
-    ax1.legend()
+    # # ---- X direction ----
+    # ax1.plot(t, tube_x_np, label="tube size (x)")
+    # ax1.plot(t, dx_np,     label="|x - x_nominal|")
+    # ax1.set_ylabel("meters")
+    # ax1.set_title("X-direction: Deviation vs Tube Size")
+    # ax1.grid(True)
+    # ax1.legend()
 
-    # ---- Y direction ----
-    ax2.plot(t, tube_y_np, label="tube size (y)")
-    ax2.plot(t, dy_np,     label="|y - y_nominal|")
-    ax2.set_ylabel("meters")
-    ax2.set_title("Y-direction: Deviation vs Tube Size")
-    ax2.grid(True)
-    ax2.legend()
+    # # ---- Y direction ----
+    # ax2.plot(t, tube_y_np, label="tube size (y)")
+    # ax2.plot(t, dy_np,     label="|y - y_nominal|")
+    # ax2.set_ylabel("meters")
+    # ax2.set_title("Y-direction: Deviation vs Tube Size")
+    # ax2.grid(True)
+    # ax2.legend()
 
-    # ---- Theta direction ----
-    ax3.plot(t, tube_th_np, label="tube size (theta)")
-    ax3.plot(t, dth_np,     label="|wrap(theta - theta_nominal)|")
-    ax3.set_xlabel("time (s)")
-    ax3.set_ylabel("radians")
-    ax3.set_title("Theta-direction: Deviation vs Tube Size")
-    ax3.grid(True)
-    ax3.legend()
+    # # ---- Theta direction ----
+    # ax3.plot(t, tube_th_np, label="tube size (theta)")
+    # ax3.plot(t, dth_np,     label="|wrap(theta - theta_nominal)|")
+    # ax3.set_xlabel("time (s)")
+    # ax3.set_ylabel("radians")
+    # ax3.set_title("Theta-direction: Deviation vs Tube Size")
+    # ax3.grid(True)
+    # ax3.legend()
 
-    plt.tight_layout()
-    plt.savefig(
-        "disturbance_vs_tube_size_xytheta_dubins.png",
-        dpi=300,
-        bbox_inches="tight",
-    )
-    plt.close(fig)
+    # plt.tight_layout()
+    # plt.savefig(
+    #     "disturbance_vs_tube_size_xytheta_dubins.png",
+    #     dpi=300,
+    #     bbox_inches="tight",
+    # )
+    # plt.close(fig)
 
 
 import numpy as np
@@ -838,6 +691,150 @@ def save_replay(
         raise ValueError(f"Unsupported extension .{ext}. Use .mp4 or .gif.")
 
     plt.close(fig)
+
+def plot_rollouts_tubes_centers(
+    xs,
+    centers=None,
+    radii=None,
+    plans_xy=None,
+    lowers_xy=None,
+    uppers_xy=None,
+    step_idx: int | None = 0,
+    tube_stride: int = 2,
+    tube_alpha: float = 0.15,
+    rollout_alpha: float = 0.35,
+    show_plan: bool = True,
+    margin: float = 0.5,
+    filename: str | None = "rollouts_tubes_centers.png",
+    dpi: int = 300,
+):
+    """
+    Static plot with obstacle centers, tube rectangles, and all rollout trajectories.
+
+    Expected (typical) shapes:
+      xs:        (n_rollouts, T, 3) OR (T, 3)
+      plans_xy:  (n_steps, N+1, 2)  (optional)
+      lowers_xy: (n_steps, N+1, 2)  (optional)
+      uppers_xy: (n_steps, N+1, 2)  (optional)
+      centers:   (K, 2)             (optional)
+      radii:     (K,)               (optional)
+    """
+    xs = np.asarray(xs)
+
+    # --- Normalize xs to (n_rollouts, T, 3) ---
+    if xs.ndim == 2 and xs.shape[1] == 3:
+        xs = xs[None, :, :]  # (1, T, 3)
+    elif xs.ndim == 2 and xs.shape[1] != 3:
+        raise ValueError(f"xs has shape {xs.shape}. Expected last dim=3 for state [px,py,theta].")
+    elif xs.ndim == 3 and xs.shape[2] != 3:
+        raise ValueError(f"xs has shape {xs.shape}. Expected xs[...,2] to be theta.")
+    elif xs.ndim != 3:
+        raise ValueError(f"xs has shape {xs.shape}. Expected 2D or 3D array.")
+
+    n_rollouts, T, _ = xs.shape
+
+    # --- Optional arrays ---
+    if plans_xy is not None:
+        plans_xy = np.asarray(plans_xy)
+    if lowers_xy is not None:
+        lowers_xy = np.asarray(lowers_xy)
+    if uppers_xy is not None:
+        uppers_xy = np.asarray(uppers_xy)
+
+    if centers is not None:
+        centers = np.asarray(centers)
+        if centers.ndim == 1:
+            centers = centers[None, :]
+    if radii is not None:
+        radii = np.asarray(radii).reshape(-1)
+
+    # --- Pick tube/plan frame ---
+    # If you only appended one plan/tube set (as in your current code), step_idx=0 is correct.
+    if lowers_xy is not None and uppers_xy is not None:
+        step_idx = int(step_idx if step_idx is not None else 0)
+        step_idx = max(0, min(step_idx, lowers_xy.shape[0] - 1))
+
+        lo = lowers_xy[step_idx]  # (N+1,2)
+        up = uppers_xy[step_idx]  # (N+1,2)
+    else:
+        lo = up = None
+
+    # --- Axis limits from xs (+ optional tubes/centers) ---
+    all_x = [xs[:, :, 0].ravel()]
+    all_y = [xs[:, :, 1].ravel()]
+
+    if plans_xy is not None:
+        all_x.append(plans_xy[:, :, 0].ravel())
+        all_y.append(plans_xy[:, :, 1].ravel())
+    if lo is not None and up is not None:
+        all_x.append(lo[:, 0].ravel())
+        all_x.append(up[:, 0].ravel())
+        all_y.append(lo[:, 1].ravel())
+        all_y.append(up[:, 1].ravel())
+    if centers is not None and centers.size:
+        all_x.append(centers[:, 0].ravel())
+        all_y.append(centers[:, 1].ravel())
+
+    all_x = np.concatenate(all_x) if len(all_x) else np.array([0.0])
+    all_y = np.concatenate(all_y) if len(all_y) else np.array([0.0])
+
+    xmin, xmax = float(all_x.min() - margin), float(all_x.max() + margin)
+    ymin, ymax = float(all_y.min() - margin), float(all_y.max() + margin)
+
+    # --- Plot ---
+    fig, ax = plt.subplots(figsize=(7, 7))
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.grid(True)
+
+    # Obstacles: circles + centers
+    if centers is not None and centers.size:
+        if radii is not None and radii.size == centers.shape[0]:
+            for c, r in zip(centers, radii):
+                ax.add_patch(plt.Circle((float(c[0]), float(c[1])), float(r), alpha=0.25))
+        ax.scatter(centers[:, 0], centers[:, 1], marker="x", s=80, linewidths=2, label="Obstacle center(s)")
+
+    # Tube rectangles (single chosen step_idx)
+    if lo is not None and up is not None:
+        rects = []
+        for k in range(0, lo.shape[0], max(1, int(tube_stride))):
+            w = up[k, 0] - lo[k, 0]
+            h = up[k, 1] - lo[k, 1]
+            if not np.isfinite(w) or not np.isfinite(h) or w < 0.0 or h < 0.0:
+                continue
+            rects.append(Rectangle((lo[k, 0], lo[k, 1]), w, h))
+        for r in rects:
+            r.set_alpha(tube_alpha)
+            ax.add_patch(r)
+        ax.plot([], [], alpha=tube_alpha, label=f"Tube boxes (step {step_idx})")  # legend handle
+
+    # Planned nominal path (optional; uses the same step_idx)
+    if show_plan and plans_xy is not None:
+        step_idx = int(step_idx if step_idx is not None else 0)
+        step_idx = max(0, min(step_idx, plans_xy.shape[0] - 1))
+        ax.plot(plans_xy[step_idx, :, 0], plans_xy[step_idx, :, 1], linestyle="--", linewidth=2, label="Planned (open-loop)")
+
+    # Rollouts
+    for i in range(n_rollouts):
+        if i > 4:
+            ax.plot(xs[i, :, 0], xs[i, :, 1], alpha=rollout_alpha, color="tab:red")
+        else:
+            ax.plot(xs[i, :, 0], xs[i, :, 1], alpha=rollout_alpha, color="tab:orange")
+
+    ax.plot([], [], alpha=rollout_alpha, label=f"Rollouts (n={n_rollouts})")  # legend handle
+
+    ax.set_title("Dubins: Rollouts + Robust Tube + Obstacle Centers")
+    ax.legend(loc="best", framealpha=0.9)
+
+    plt.tight_layout()
+    if filename is not None:
+        plt.savefig(filename, dpi=dpi, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.show()
 
 if __name__ == "__main__":
     main()

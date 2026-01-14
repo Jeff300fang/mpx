@@ -1,6 +1,43 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+from matplotlib.ticker import FuncFormatter, MaxNLocator
+
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+plt.rcParams.update({
+    "font.size": 16,          # base font size
+})
+
+
+plt.rcParams.update({
+    "font.family": "serif",
+    "font.serif": [
+        "Times New Roman",   # used if available
+        "Times",             # macOS fallback
+        "Nimbus Roman",      # Linux fallback
+    ],
+    "mathtext.fontset": "stix",
+})
+
+# -----------------------------
+# Helpers for "log-looking" ticks
+# -----------------------------
+def pow10_formatter(val, pos=None):
+    # val is log10(value)
+    if np.isfinite(val) and abs(val - round(val)) < 1e-6:
+        return r"$10^{%d}$" % int(round(val))
+    return ""
+
+
+def set_loglike_ticks(ax):
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.zaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.xaxis.set_major_formatter(FuncFormatter(pow10_formatter))
+    ax.yaxis.set_major_formatter(FuncFormatter(pow10_formatter))
+    ax.zaxis.set_major_formatter(FuncFormatter(pow10_formatter))
+
 
 # ------------------------------------------------------------
 # Raw data: (x, y, z)
@@ -50,82 +87,107 @@ data = np.array([
     [100, 500,  40.95],
     [100, 1000, 72.97],
     [100, 2000, 138],
-
 ])
 
 # ------------------------------------------------------------
-# Filter out rows with missing z-values
+# Filter out missing z-values
 # ------------------------------------------------------------
 mask = ~np.isnan(data[:, 2])
-x = data[mask, 0]
-y = data[mask, 1]
-z = data[mask, 2]
-x = np.log10(x)
-y = np.log10(y)
-z = np.log10(z)
+x = data[mask, 0].astype(float)
+y = data[mask, 1].astype(float)
+z = data[mask, 2].astype(float)
+
+# log axes require strictly positive values
+if np.any(x <= 0) or np.any(y <= 0) or np.any(z <= 0):
+    raise ValueError("Log plots require x, y, z to be strictly positive.")
 
 # ------------------------------------------------------------
-# Create 3D scatter plot
+# Work in log10 coordinates FOR PLOTTING (robust in 3D)
+# ------------------------------------------------------------
+xL = np.log10(x)
+yL = np.log10(y)
+zL = np.log10(z)
+
+# ------------------------------------------------------------
+# 1) 3D scatter plot in log coordinates (no set_*scale('log'))
 # ------------------------------------------------------------
 fig = plt.figure(figsize=(8, 6))
 ax = fig.add_subplot(projection="3d")
 ax.view_init(elev=25, azim=40)
-ax.scatter(x, y, z, s=70)
 
+ax.scatter(xL, yL, zL, s=70)
+
+ax.invert_xaxis()
 ax.set_xlabel("Number of Decision Variables")
-ax.invert_xaxis() 
 ax.set_ylabel("Horizon")
 ax.set_zlabel("Solve Time (ms)")
-ax.set_title("3D Scatter (Observed Data Only)")
+ax.set_title("3D Scatter (Log–Log–Log, Stable Rendering)")
+
+set_loglike_ticks(ax)
 
 plt.tight_layout()
-
-# ------------------------------------------------------------
-# Save to file
-# ------------------------------------------------------------
-output_path = "3d_scatter.png"
-plt.savefig(output_path, dpi=300)
+plt.savefig("3d_scatter_loglike.png", dpi=300)
 plt.close(fig)
 
-print(f"Saved plot to {output_path}")
+print("Saved plot to 3d_scatter_loglike.png")
 
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import LinearRegression
+# ------------------------------------------------------------
+# 2) Polynomial regression in log space:
+#    zL = poly(xL, yL)
+# ------------------------------------------------------------
+X_log = np.column_stack([xL, yL])
 
-XY = np.column_stack([x, y])
 degree = 2
 poly = PolynomialFeatures(degree=degree, include_bias=True)
-XY_poly = poly.fit_transform(XY)
+X_log_poly = poly.fit_transform(X_log)
 
-model = LinearRegression().fit(XY_poly, z)
+model = LinearRegression().fit(X_log_poly, zL)
 
-# Evaluate on grid
-Xi, Yi = np.meshgrid(
-    np.linspace(x.min(), x.max(), 50),
-    np.linspace(y.min(), y.max(), 50)
+# ------------------------------------------------------------
+# 3) Evaluate model on a grid IN LOG SPACE (important!)
+#    This avoids warped surfaces / folding artifacts
+# ------------------------------------------------------------
+XiL, YiL = np.meshgrid(
+    np.linspace(xL.min(), xL.max(), 60),
+    np.linspace(yL.min(), yL.max(), 60),
 )
-XYi = np.column_stack([Xi.ravel(), Yi.ravel()])
-Zi = model.predict(poly.transform(XYi)).reshape(Xi.shape)
+
+grid_log = np.column_stack([XiL.ravel(), YiL.ravel()])
+ZiL = model.predict(poly.transform(grid_log)).reshape(XiL.shape)
+
+# OPTIONAL SAFETY: If you see folds due to the polynomial itself, clip the
+# predicted z range to something sane (comment out if you dislike clipping).
+# ZiL = np.clip(ZiL, zL.min() - 0.25, zL.max() + 0.25)
+
+# ------------------------------------------------------------
+# 4) Plot surface in log coordinates (stable) + data points
+# ------------------------------------------------------------
 fig = plt.figure(figsize=(8, 6))
 ax = fig.add_subplot(projection="3d")
+ax.view_init(elev=25, azim=20)
 
-# Surface
 ax.plot_surface(
-    Xi, Yi, Zi,
+    XiL, YiL, ZiL,
     alpha=0.6,
     linewidth=0,
     antialiased=True
 )
 
-# Original data
-ax.scatter(x, y, z, color="k", s=50)
-ax.view_init(elev=25, azim=20)
+ax.scatter(xL, yL, zL, color="k", s=50)
+
 ax.invert_xaxis()
 ax.set_xlabel("Number of Decision Variables")
 ax.set_ylabel("Horizon")
 ax.set_zlabel("Solve Time (ms)")
-ax.set_title(f"Polynomial Surface Fit (degree={degree})")
+ax.set_title(
+    "Solve Time vs Horizon vs Number of Decision Variables",
+    pad=0   # try values in [4, 12]
+)
+
+set_loglike_ticks(ax)
 
 plt.tight_layout()
-plt.savefig("3d_polynomial_surface.png", dpi=300)
+plt.savefig("3d_polynomial_surface_loglike.png", dpi=300)
 plt.close(fig)
+
+print("Saved plot to 3d_polynomial_surface_loglike.png")
