@@ -405,7 +405,7 @@ class MPCControllerWrapper:
         q = np.array(q_temp)
         dq = np.array(dq_temp)
 
-        return tau, q, dq, self.X0, self.U0, self.V0, backoffs, Phi_x, Phi_u 
+        return tau, q, dq, self.X0, self.U0, self.V0, backoffs, Phi_x, Phi_u, parameter 
 
     def reset(self,qpos,qvel):
         """

@@ -127,16 +127,16 @@ def make_state_box_constraints(
     x_max = jnp.asarray(x_max)
 
     def constraints(x: jnp.ndarray, u: jnp.ndarray, t: jnp.ndarray) -> jnp.ndarray:
-        x_xy = x[:2]
+        x_xy = x[:3]
         return jnp.concatenate(
-            [x_xy - x_max[:2], x_min[:2] - x_xy],
+            [x_xy - x_max[:3], x_min[:3] - x_xy],
             axis=0,
         )
 
     return constraints
 
-x_max = jnp.array([15.0, 15.0])
-x_min = -x_max
+x_max = jnp.array([15.0, 15.0, 1.0])
+x_min = jnp.array([-15.0, -15.0, 0.25])
 
 state_box_constraints = make_state_box_constraints(x_min, x_max)
 
@@ -146,7 +146,7 @@ key = jax.random.PRNGKey(1)
 # centers, radii = random_circles(key, K=num_constraints, radius=0.43)
 
 # Predefined obstacles
-num_constraints = 5
+num_constraints = 7
 obstacles = jnp.array([[2.0, 0.1, 0.43]])
 centers = jnp.array([[2.0, 0.1]])
 
@@ -428,7 +428,7 @@ ref_base_ang_vel =  np.array([0., 0., 0.])
 input = np.array([ref_base_lin_vel[0],ref_base_lin_vel[1],ref_base_lin_vel[2],
                     ref_base_ang_vel[0],ref_base_ang_vel[1],ref_base_ang_vel[2],
                     config.robot_height])
-tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u = mpc.run(qpos,qvel,input,contact)
+tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u, parameter = mpc.run(qpos,qvel,input,contact)
 
 outdir = "mpc_data"
 os.makedirs(outdir, exist_ok=True)
@@ -442,6 +442,7 @@ np.savez(
     V=np.asarray(V),
     Phi_x=np.asarray(Phi_x),
     Phi_u=np.asarray(Phi_u),
+    parameter=np.asarray(parameter),
 )
 
 print(f"Saved MPC data to: {save_path}")
@@ -576,7 +577,7 @@ N, nx = diff.shape
 assert tube_sizes.shape == (N, nx), (tube_sizes.shape, diff.shape)
 
 t = np.arange(N) * config.dt
-
+nx_no_contact_grf = nx - 12
 def minmax_01(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     """Map 1D array to [0,1]. If nearly-constant, return zeros."""
     x = np.asarray(x)
@@ -601,7 +602,7 @@ save_path = os.path.join(outdir, f"tube_vs_diff_norm01_6perrow_N{N}_nx{nx}.png")
 fig, axes = plt.subplots(nrows, ncols, figsize=(fig_w, fig_h), sharex=True)
 axes = np.atleast_2d(axes)
 
-for j in range(nx):
+for j in range(nx_no_contact_grf):
     r = j // ncols
     c = j % ncols
     ax = axes[r, c]
@@ -620,7 +621,7 @@ for j in range(nx):
     ax.set_ylim(-0.05, 1.05)  # keep consistent scale across subplots
 
 # Turn off unused axes
-for j in range(nx, nrows * ncols):
+for j in range(nx_no_contact_grf, nrows * ncols):
     r = j // ncols
     c = j % ncols
     axes[r, c].axis("off")
