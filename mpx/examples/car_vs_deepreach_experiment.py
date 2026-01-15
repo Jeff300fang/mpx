@@ -41,6 +41,22 @@ from matplotlib.collections import PatchCollection
 
 import matplotlib as mpl
 
+import matplotlib.patheffects as pe
+
+# --- Styling palette (muted, readable) ---
+PALETTE = {
+    "plan":      "#1f77b4",   # blue
+    "random":    "#ff7f0e",   # orange
+    "adversary": "#d62728",   # red
+    "tube_face": "#2ca02c",   # green
+    "tube_edge": "#1b7f1b",   # darker green edge
+    "obs_face":  "#7f7f7f",   # gray
+    "obs_edge":  "#4d4d4d",   # dark gray edge
+}
+
+NUM_RANDOM = 5
+NUM_ADV = 26
+
 mpl.rcParams.update({
     "font.family": "serif",          # or "sans-serif", "monospace"
     "font.serif": [
@@ -129,26 +145,59 @@ def dubins_step_with_disturbance(
 
     w = r * z
     jax.debug.print("{}", w)
-    if i == 5:
+    start = i - NUM_RANDOM + 5
+    if start == 5:
         w = jnp.array([0.0, 1.0, 0])
-    if i == 6:
+    if start == 6:
         w = jnp.array([0.0, -1.0, 0])
-    if i == 7:
+    if start == 7:
         w = jnp.array([1.0, 0.0, 0])
-    if i == 8:
+    if start == 8:
         w = jnp.array([-1.0, 0.0, 0])
-    if i == 9:
+    if start == 9:
         w = jnp.array([0.0, 0.0, 1.0])
-    if i == 10:
+    if start == 10:
         w = jnp.array([0.0, 0.0, -1.0])
-    if i == 11:
+    if start == 11:
         w = jnp.array([0.707, 0.707, 0.0])
-    if i == 12:
+    if start == 12:
         w = jnp.array([-0.707, 0.707, 0.0])
-    if i == 13:
+    if start == 13:
         w = jnp.array([0.707, -0.707, 0.0])
-    if i == 14:
+    if start == 14:
         w = jnp.array([-0.707, -0.707, 0.0])
+    if start == 15:
+        w = jnp.array([0.707, 0.0 ,0.707])
+    if start == 16:
+        w = jnp.array([-0.707, 0.0, 0.707])
+    if start == 17:
+        w = jnp.array([0.707, 0.0, -0.707])
+    if start == 18:
+        w = jnp.array([-0.707, 0.0, -0.707])
+    if start == 19:
+        w = jnp.array([0.0, 0.707 ,0.707])
+    if start == 20:
+        w = jnp.array([0.0, -0.707, 0.707])
+    if start == 21:
+        w = jnp.array([0.0, 0.707, -0.707])
+    if start == 22:
+        w = jnp.array([0.0, -0.707, -0.707])
+    if start == 23:
+        w = jnp.array([0.577, 0.577, 0.577])
+    if start == 24:
+        w = jnp.array([-0.577, 0.577, 0.577])
+    if start == 25:
+        w = jnp.array([0.577, -0.577, 0.577])
+    if start == 26:
+        w = jnp.array([0.577, 0.577, -0.577])
+    if start == 27:
+        w = jnp.array([-0.577, -0.577, 0.577])
+    if start == 28:
+        w = jnp.array([0.577, -0.577, -0.577])
+    if start == 29:
+        w = jnp.array([-0.577, 0.577, -0.577])
+    if start == 30:
+        w = jnp.array([-0.577, -0.577, -0.577])
     # w = jnp.array([0.0, 1.0, 0])
 
     # Additive disturbance
@@ -174,14 +223,15 @@ def cost(W, reference, x, u, t):
 
     dx = x[0] - xref[0]
     dy = x[1] - xref[1]
-    dth = wrap_to_pi(x[2] - xref[2])
+    dth = x[2] - xref[2]
+    theta_cost = 1 - jnp.cos(dth)
 
     om = u[0]
 
     return (
         wx * (dx * dx)
         + wy * (dy * dy)
-        + wtheta * (dth * dth)
+        + wtheta * theta_cost
         + womega * (om * om)
     )
 
@@ -268,7 +318,7 @@ def main():
     nu = 1     # [omega]
 
     # Horizon and dt
-    N = 110
+    N = 101
     dt = 0.1
 
     # Weights: (x, y, theta, omega)
@@ -296,7 +346,8 @@ def main():
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 50,
+        max_sqp_iterations = 1000,
+        warm_start=False
     )
 
     parameter = dt
@@ -343,8 +394,8 @@ def main():
     # -----------------------------
     # Initial condition
     # -----------------------------
-    x = jnp.array([-0.75, -0.5, 0.0])
-    x_goal = jnp.array([0.75, 0.5, 0.0])  # shape (nx,)
+    x = jnp.array([-0.75, -0.75, 0.0])
+    x_goal = jnp.array([0.75, 0.3, 0.0])  # shape (nx,)
     X_ref = jnp.tile(x_goal[None, :], (N + 1, 1))  # shape (N+1, nx)
     reference = X_ref
     T_steps = N
@@ -377,10 +428,12 @@ def main():
     sls_cfg = SLSConfig(
         max_sls_iterations=2,
         sls_primal_tol=1e-2,
-        enable_fastsls=True
+        enable_fastsls=True,
+        warm_start=False,
     )
 
     sqp_cfg = SQPConfig(
+        warm_start=False,
         max_sqp_iterations = 50,
     )
     controller = GenericMPCControllerWrapper(
@@ -399,9 +452,11 @@ def main():
         X_in=X_pred,
         U_in=U_pred,
     )
-    N_ROLLOUTS = 15
+    N_ROLLOUTS = NUM_RANDOM + NUM_ADV
+    # N_ROLLOUTS = 1
     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
     tube = get_trajectory_tubes(Phi_x)
+    tube_size = tube[1:]
     plan_xy = X_pred[:, :2]
     lower = plan_xy - tube[:, :2]
     upper = plan_xy + tube[:, :2]
@@ -410,9 +465,11 @@ def main():
     lowers_xy.append(lower)
     uppers_xy.append(upper)
     xs = np.zeros((N_ROLLOUTS, T_steps, 3))
+    disturbed = np.zeros((N_ROLLOUTS, T_steps, 3))
+    
     for i in range(N_ROLLOUTS):
         disturbance_history = [jnp.zeros(X_pred[0].shape)]
-        x = jnp.array([-0.75, -0.5, 0.0])
+        x = jnp.array([-0.75, -0.75, 0.0])
         for k in range(T_steps):
             print(f"sim iteration {k}")
             disturbance_feedback = jnp.zeros((nu,))
@@ -421,6 +478,8 @@ def main():
             u0 = U_pred[k] + disturbance_feedback
             # apply
             key, x, w = dubins_step_with_disturbance(key, x, u0, E_sim, dt, i)
+            disturbed[i, k, :2] = abs(X_pred[k + 1, :2] - x[:2])
+            disturbed[i, k, 2] = abs(wrap_to_pi(X_pred[k + 1, 2] - x[2]))
             disturbance_history.append(w)
             xs[i, k] = x
 
@@ -437,7 +496,10 @@ def main():
         step_idx=0,                 # use 0 since you only appended once
         tube_stride=1,
         filename="rollouts_tubes_centers.png",
-        show_plan=False
+        show_plan=False,
+        tube_alpha=0.1,
+        margin=0.1,
+        rollout_alpha=0.5
     )
 
     # save_replay(
@@ -453,50 +515,54 @@ def main():
     #     box_stride=1,
     # )
 
-    # import numpy as np
-    # import matplotlib.pyplot as plt
-
     # # convert to numpy
-    # dx_np      = np.asarray(jnp.stack(disturbed_distance))
-    # dy_np      = np.asarray(jnp.stack(disturbed_distance_y))
-    # dth_np     = np.asarray(jnp.stack(disturbed_distance_th))   # NEW
+    dx_np_all      = disturbed[:, :, 0]
+    dy_np_all      = disturbed[:, :, 1]
+    dth_np_all     = disturbed[:, :, 2]
+    tube_x_np  = np.asarray(tube[1:, 0])
+    tube_y_np  = np.asarray(tube[1:, 1])
+    tube_th_np = np.asarray(tube[1:, 2])
 
-    # t = np.arange(dx_np.shape[0]) * dt
 
-    # fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
+    t = np.arange(dx_np_all.shape[1]) * dt
 
-    # # ---- X direction ----
-    # ax1.plot(t, tube_x_np, label="tube size (x)")
-    # ax1.plot(t, dx_np,     label="|x - x_nominal|")
-    # ax1.set_ylabel("meters")
-    # ax1.set_title("X-direction: Deviation vs Tube Size")
-    # ax1.grid(True)
-    # ax1.legend()
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
 
-    # # ---- Y direction ----
-    # ax2.plot(t, tube_y_np, label="tube size (y)")
-    # ax2.plot(t, dy_np,     label="|y - y_nominal|")
-    # ax2.set_ylabel("meters")
-    # ax2.set_title("Y-direction: Deviation vs Tube Size")
-    # ax2.grid(True)
-    # ax2.legend()
+    # ---- X direction ----
+    ax1.plot(t, tube_x_np, label="tube size (x)", linewidth=4)
+    for r, dx_np in enumerate(dx_np_all):
+        ax1.plot(t, dx_np,     label="|x - x_nominal|" if r == 0 else None)
+    ax1.set_ylabel("meters")
+    ax1.set_title("X-direction: Deviation vs Tube Size")
+    ax1.grid(True)
+    ax1.legend()
 
-    # # ---- Theta direction ----
-    # ax3.plot(t, tube_th_np, label="tube size (theta)")
-    # ax3.plot(t, dth_np,     label="|wrap(theta - theta_nominal)|")
-    # ax3.set_xlabel("time (s)")
-    # ax3.set_ylabel("radians")
-    # ax3.set_title("Theta-direction: Deviation vs Tube Size")
-    # ax3.grid(True)
-    # ax3.legend()
+    # ---- Y direction ----
+    ax2.plot(t, tube_y_np, label="tube size (y)", linewidth=4)
+    for r, dy_np in enumerate(dy_np_all):
+        ax2.plot(t, dy_np,     label="|y - y_nominal|" if r == 0 else None)
+    ax2.set_ylabel("meters")
+    ax2.set_title("Y-direction: Deviation vs Tube Size")
+    ax2.grid(True)
+    ax2.legend()
 
-    # plt.tight_layout()
-    # plt.savefig(
-    #     "disturbance_vs_tube_size_xytheta_dubins.png",
-    #     dpi=300,
-    #     bbox_inches="tight",
-    # )
-    # plt.close(fig)
+    # ---- Theta direction ----
+    ax3.plot(t, tube_th_np, label="tube size (theta)", linewidth=4)
+    for r, dth_np in enumerate(dth_np_all):
+        ax3.plot(t, dth_np,     label="|wrap(theta - theta_nominal)|" if r == 0 else None)
+    ax3.set_xlabel("time (s)")
+    ax3.set_ylabel("radians")
+    ax3.set_title("Theta-direction: Deviation vs Tube Size")
+    ax3.grid(True)
+    ax3.legend()
+
+    plt.tight_layout()
+    plt.savefig(
+        "disturbance_vs_tube_size_xytheta_dubins.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close(fig)
 
 
 import numpy as np
@@ -588,7 +654,7 @@ def save_replay(
 
     # Obstacles
     for c, r in zip(centers, radii):
-        ax.add_patch(plt.Circle((float(c[0]), float(c[1])), float(r), color="red", alpha=0.35))
+        ax.add_patch(plt.Circle((float(c[0]), float(c[1])), float(r), color="tab:red", alpha=0.35))
 
     # Artists
     executed_line, = ax.plot([], [], lw=2, alpha=0.8, label="Executed (closed-loop)")
@@ -794,8 +860,7 @@ def plot_rollouts_tubes_centers(
     if centers is not None and centers.size:
         if radii is not None and radii.size == centers.shape[0]:
             for c, r in zip(centers, radii):
-                ax.add_patch(plt.Circle((float(c[0]), float(c[1])), float(r), alpha=0.25))
-        ax.scatter(centers[:, 0], centers[:, 1], marker="x", s=80, linewidths=2, label="Obstacle center(s)")
+                ax.add_patch(plt.Circle((float(c[0]), float(c[1])), float(r), alpha=0.5, color="tab:red"))
 
     # Tube rectangles (single chosen step_idx)
     if lo is not None and up is not None:
@@ -819,8 +884,8 @@ def plot_rollouts_tubes_centers(
 
     # Rollouts
     for i in range(n_rollouts):
-        if i > 4:
-            ax.plot(xs[i, :, 0], xs[i, :, 1], alpha=rollout_alpha, color="tab:red")
+        if i > NUM_RANDOM - 1:
+            ax.plot(xs[i, :, 0], xs[i, :, 1], alpha=rollout_alpha, color="tab:orange")
         else:
             ax.plot(xs[i, :, 0], xs[i, :, 1], alpha=rollout_alpha, color="tab:orange")
 

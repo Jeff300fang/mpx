@@ -8,7 +8,9 @@ from functools import partial
 from jax import vmap
 from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMConfig
 from mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers import SQPConfig
+from mpx.utils.fast_sls_visual import get_trajectory_tubes
 from typing import Callable
+import os
 # Update JAX configuration
 jax.config.update("jax_compilation_cache_dir", "./jax_cache")
 jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
@@ -255,8 +257,8 @@ disturbance = make_constant_disturbance(n=config.n, alpha=alpha_sim)
 obstacle_cosntraints = partial(outside_circle_constraints, centers=centers, radii=radii)
 
 admm_config = ADMMConfig(
-        eps_abs=1e-2,
-        eps_rel=1e-2,
+        eps_abs=1e-3,
+        eps_rel=0,
         condense_block_size=5,
         rho_max=1e5
     )
@@ -266,10 +268,11 @@ sls_config = SLSConfig(
     enable_fastsls=False,
 )
 sqp_config = SQPConfig(
-    max_sqp_iterations=19
+    max_sqp_iterations=2,
+    warm_start=False
 )
 inital_state = jnp.concatenate([config.p0, config.quat0,config.q0, jnp.zeros(6+config.n_joints),config.p_legs0,jnp.zeros(3*config.n_contact)])
-X_in = jnp.tile(config.u_ref, (config.N, 1))
+X_in = jnp.tile(inital_state, (config.N + 1, 1))
 U_in = jnp.tile(config.u_ref, (config.N, 1))
 
 mpc = mpc_wrapper.MPCControllerWrapper(
@@ -301,6 +304,116 @@ mpc.robot_height = config.robot_height
 mpc.reset(env.mjData.qpos.copy(),env.mjData.qvel.copy())
 first = True
 
+# qpos = env.mjData.qpos.copy()
+# qvel = env.mjData.qvel.copy()
+# contact_temp, _ = env.feet_contact_state()
+# contact = np.array([contact_temp[robot_feet_geom_names[leg]] for leg in ['FL','FR','RL','RR']])
+
+# video = VideoWriter("go2_run.mp4", fps=30) 
+# ref_base_lin_vel = env._ref_base_lin_vel_H
+# # ref_base_ang_vel =  np.array([0., 0., env._ref_base_ang_yaw_dot])
+# ref_base_lin_vel = np.array([0.3, 0., 0.])
+# ref_base_ang_vel =  np.array([0., 0., 0.])
+
+# input = np.array([ref_base_lin_vel[0],ref_base_lin_vel[1],ref_base_lin_vel[2],
+#                     ref_base_ang_vel[0],ref_base_ang_vel[1],ref_base_ang_vel[2],
+#                     config.robot_height])
+# tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u = mpc.run(qpos,qvel,input,contact)
+# writer = imageio.get_writer("go2_run.mp4", fps=30)
+# m = env.mjModel   # sometimes env.model or env._model
+# d = env.mjData 
+# fb_w = int(getattr(m.vis.global_, "offwidth", 640))
+# fb_h = int(getattr(m.vis.global_, "offheight", 480))
+
+# W = min(640, fb_w)
+# H = min(480, fb_h)
+
+# renderer = mujoco.Renderer(m, height=H, width=W)
+# for i in range(config.N):
+#     qpos = env.mjData.qpos.copy()
+#     qvel = env.mjData.qvel.copy()
+#     tau = U[i, :config.n_joints]
+#     q = X[i, 7:config.n_joints + 7]
+#     tau_fb = 10*(q-qpos[7:7+config.n_joints]) -2*(qvel[6:6+config.n_joints])
+#     print("Time step:", i, "/", config.N, ":", jnp.linalg.norm(qpos[:7] - X[i, :7]))
+#     state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
+#     env.render()
+#     renderer.update_scene(d)
+#     frame = renderer.render()          # (H, W, 3), uint8
+#     writer.append_data(frame)
+
+# writer.close()
+
+# while env.viewer.is_running():
+for i in range(0):
+ 
+    qpos = env.mjData.qpos.copy()
+    qvel = env.mjData.qvel.copy()
+    if (counter % (sim_frequency / mpc_frequency) == 0 or counter == 0):
+    
+ 
+        ref_base_lin_vel = env._ref_base_lin_vel_H
+        # ref_base_ang_vel =  np.array([0., 0., env._ref_base_ang_yaw_dot])
+        ref_base_lin_vel = np.array([0.3, 0., 0.])
+        ref_base_ang_vel =  np.array([0., 0., 0.])
+
+        input = np.array([ref_base_lin_vel[0],ref_base_lin_vel[1],ref_base_lin_vel[2],
+                           ref_base_ang_vel[0],ref_base_ang_vel[1],ref_base_ang_vel[2],
+                           config.robot_height])
+        
+        contact_temp, _ = env.feet_contact_state()
+        
+        contact = np.array([contact_temp[robot_feet_geom_names[leg]] for leg in ['FL','FR','RL','RR']])
+
+        if counter != 0:
+            for i in range(delay):
+                qpos = env.mjData.qpos.copy()
+                qvel = env.mjData.qvel.copy()
+                # tau_fb = K@(x-np.concatenate([qpos,qvel]))
+
+                tau_fb = 10*(q-qpos[7:7+config.n_joints]) -2*(qvel[6:6+config.n_joints])
+                state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
+                counter += 1
+        start = timer()
+        tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u = mpc.run(qpos,qvel,input,contact)   
+        stop = timer()
+        print("Time taken for MPC: ", stop-start)   
+        render_obstacles(centers, radii)
+        # for i in range(4):
+        #     render_sphere(env.viewer,
+        #                   collision_point[3*i:3*i+3],
+        #                   0.2,
+        #                   np.array([1, 0, 0, 0.5]),
+        #                   ids[i])
+
+    tau_fb = 10*(q-qpos[7:7+config.n_joints])-2*(qvel[6:6+config.n_joints])
+    state, reward, is_terminated, is_truncated, info = env.step(action= tau + tau_fb)
+
+    # time.sleep(0.1)
+    counter += 1
+    env.render()
+
+sqp_config = SQPConfig(
+    max_sqp_iterations=50,
+    warm_start=False
+)
+sls_config = SLSConfig(
+    max_sls_iterations = 2,
+    sls_primal_tol = 1e-2,
+    enable_fastsls=True,
+)
+inital_state = jnp.concatenate([config.p0, config.quat0,config.q0, jnp.zeros(6+config.n_joints),config.p_legs0,jnp.zeros(3*config.n_contact)])
+X_in = jnp.tile(inital_state, (config.N + 1, 1))
+U_in = jnp.tile(config.u_ref, (config.N, 1))
+# X_in = X
+# U_in = U
+
+mpc = mpc_wrapper.MPCControllerWrapper(
+    config,
+    sls_config, sqp_config, admm_config,
+    state_box_constraints, obstacles, num_constraints,
+    disturbance,
+    X_in, U_in)
 qpos = env.mjData.qpos.copy()
 qvel = env.mjData.qvel.copy()
 contact_temp, _ = env.feet_contact_state()
@@ -316,6 +429,23 @@ input = np.array([ref_base_lin_vel[0],ref_base_lin_vel[1],ref_base_lin_vel[2],
                     ref_base_ang_vel[0],ref_base_ang_vel[1],ref_base_ang_vel[2],
                     config.robot_height])
 tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u = mpc.run(qpos,qvel,input,contact)
+
+outdir = "mpc_data"
+os.makedirs(outdir, exist_ok=True)
+
+save_path = os.path.join(outdir, "go2_mpc_rollout.npz")
+
+np.savez(
+    save_path,
+    X=np.asarray(X),
+    U=np.asarray(U),
+    V=np.asarray(V),
+    Phi_x=np.asarray(Phi_x),
+    Phi_u=np.asarray(Phi_u),
+)
+
+print(f"Saved MPC data to: {save_path}")
+
 writer = imageio.get_writer("go2_run.mp4", fps=30)
 m = env.mjModel   # sometimes env.model or env._model
 d = env.mjData 
@@ -325,7 +455,29 @@ fb_h = int(getattr(m.vis.global_, "offheight", 480))
 W = min(640, fb_w)
 H = min(480, fb_h)
 
+def get_x_actual_from_mujoco(model, data, contact_id, qpos, qvel, grf_as_state: bool, n_contact: int):
+    """
+    Build x_actual with the SAME ordering used by MPCControllerWrapper.run():
+      x0 = [qpos, qvel, foot_op, (grf or zeros)]
+    """
+    data.qpos = np.asarray(qpos)
+    # data.qvel is not needed for kinematics, but keep consistent if you want:
+    # data.qvel = np.asarray(qvel)
+
+    mujoco.mj_kinematics(model, data)
+
+    foot_op = np.array([data.geom_xpos[g] for g in contact_id], dtype=np.float64).reshape(-1)  # (3*n_contact,)
+
+    if grf_as_state:
+        grf = np.zeros(3 * n_contact, dtype=np.float64)  # placeholder unless you compute GRF
+        x_actual = np.concatenate([np.asarray(qpos), np.asarray(qvel), foot_op, grf], axis=0)
+    else:
+        x_actual = np.concatenate([np.asarray(qpos), np.asarray(qvel), foot_op], axis=0)
+
+    return x_actual
+
 renderer = mujoco.Renderer(m, height=H, width=W)
+diff = np.zeros((config.N, config.n))
 for i in range(config.N):
     qpos = env.mjData.qpos.copy()
     qvel = env.mjData.qvel.copy()
@@ -333,7 +485,18 @@ for i in range(config.N):
     q = X[i, 7:config.n_joints + 7]
     tau_fb = 10*(q-qpos[7:7+config.n_joints]) -2*(qvel[6:6+config.n_joints])
     print("Time step:", i, "/", config.N, ":", jnp.linalg.norm(qpos[:7] - X[i, :7]))
-    state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
+    # state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
+    state, reward, is_terminated, is_truncated, info = env.step(action=tau)
+    x_actual = get_x_actual_from_mujoco(
+        mpc.model, mpc.data, mpc.contact_id,
+        qpos=env.mjData.qpos.copy(),
+        qvel=env.mjData.qvel.copy(),
+        grf_as_state=config.grf_as_state,
+        n_contact=config.n_contact
+    )
+    x_pred = np.asarray(X[i + 1])
+    diff[i] = np.abs(x_actual - x_pred)
+
     env.render()
     renderer.update_scene(d)
     frame = renderer.render()          # (H, W, 3), uint8
@@ -341,50 +504,137 @@ for i in range(config.N):
 
 writer.close()
 
-# while env.viewer.is_running():
- 
-#     qpos = env.mjData.qpos.copy()
-#     qvel = env.mjData.qvel.copy()
-#     if (counter % (sim_frequency / mpc_frequency) == 0 or counter == 0):
-    
- 
-#         ref_base_lin_vel = env._ref_base_lin_vel_H
-#         # ref_base_ang_vel =  np.array([0., 0., env._ref_base_ang_yaw_dot])
-#         ref_base_lin_vel = np.array([0.3, 0., 0.])
-#         ref_base_ang_vel =  np.array([0., 0., 0.])
 
-#         input = np.array([ref_base_lin_vel[0],ref_base_lin_vel[1],ref_base_lin_vel[2],
-#                            ref_base_ang_vel[0],ref_base_ang_vel[1],ref_base_ang_vel[2],
-#                            config.robot_height])
-        
-#         contact_temp, _ = env.feet_contact_state()
-        
-#         contact = np.array([contact_temp[robot_feet_geom_names[leg]] for leg in ['FL','FR','RL','RR']])
+# Plot tubes
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import math
+tubes = get_trajectory_tubes(Phi_x)
+tube_sizes = tubes[1:]
 
-#         if counter != 0:
-#             for i in range(delay):
-#                 qpos = env.mjData.qpos.copy()
-#                 qvel = env.mjData.qvel.copy()
-#                 # tau_fb = K@(x-np.concatenate([qpos,qvel]))
+# Ensure numpy
+# diff = np.asarray(diff)                       # (N, nx)
+# tube_sizes = np.asarray(tube_sizes)           # (N, nx) if you used tubes[1:]
+# N, nx = diff.shape
+# assert tube_sizes.shape[0] == N and tube_sizes.shape[1] == nx, (tube_sizes.shape, diff.shape)
 
-#                 tau_fb = 10*(q-qpos[7:7+config.n_joints]) -2*(qvel[6:6+config.n_joints])
-#                 state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
-#                 counter += 1
-#         start = timer()
-#         tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u = mpc.run(qpos,qvel,input,contact)   
-#         stop = timer()
-#         print("Time taken for MPC: ", stop-start)   
-#         render_obstacles(centers, radii)
-#         # for i in range(4):
-#         #     render_sphere(env.viewer,
-#         #                   collision_point[3*i:3*i+3],
-#         #                   0.2,
-#         #                   np.array([1, 0, 0, 0.5]),
-#         #                   ids[i])
+# t = np.arange(N) * config.dt
 
-#     tau_fb = 10*(q-qpos[7:7+config.n_joints])-2*(qvel[6:6+config.n_joints])
-#     state, reward, is_terminated, is_truncated, info = env.step(action= tau + tau_fb)
+# # Layout
+# ncols = 6
+# nrows = math.ceil(nx / ncols)
 
-#     # time.sleep(0.1)
-#     counter += 1
-#     env.render()
+# fig_w = 18
+# fig_h = 3.0 * nrows
+
+# outdir = "tube_vs_diff"
+# os.makedirs(outdir, exist_ok=True)
+# save_path = os.path.join(outdir, f"tube_vs_diff_6perrow_N{N}_nx{nx}.png")
+
+# fig, axes = plt.subplots(nrows, ncols, figsize=(fig_w, fig_h), sharex=True)
+# axes = np.atleast_2d(axes)
+
+# for j in range(nx):
+#     r = j // ncols
+#     c = j % ncols
+#     ax = axes[r, c]
+
+#     ax.plot(t, tube_sizes[:, j], linewidth=1.2, label="tube")
+#     ax.plot(t, diff[:, j],       linewidth=1.2, label="|x_actual - x_pred|")
+
+#     ax.set_title(f"x[{j}]", fontsize=9)
+#     ax.grid(True)
+
+#     # Optional: log scale helps when magnitudes vary a lot
+#     # ax.set_yscale("log")
+
+# # Turn off unused axes
+# for j in range(nx, nrows * ncols):
+#     r = j // ncols
+#     c = j % ncols
+#     axes[r, c].axis("off")
+
+# # Only label bottom row to reduce clutter
+# for ax in axes[-1, :]:
+#     ax.set_xlabel("Time [s]")
+
+# # Single legend for the whole figure
+# handles, labels = axes[0, 0].get_legend_handles_labels()
+# fig.legend(handles, labels, loc="upper right")
+
+# fig.suptitle("Tube size vs actual deviation (per state dimension)", y=0.995)
+# plt.tight_layout()
+
+# fig.savefig(save_path, dpi=250, bbox_inches="tight")
+# plt.close(fig)
+
+# print(f"Saved: {save_path}")
+diff = np.asarray(diff)                 # (N, nx)
+tube_sizes = np.asarray(tube_sizes)     # (N, nx)
+N, nx = diff.shape
+assert tube_sizes.shape == (N, nx), (tube_sizes.shape, diff.shape)
+
+t = np.arange(N) * config.dt
+
+def minmax_01(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+    """Map 1D array to [0,1]. If nearly-constant, return zeros."""
+    x = np.asarray(x)
+    x_min = np.min(x)
+    x_max = np.max(x)
+    denom = x_max - x_min
+    if denom < eps:
+        return np.zeros_like(x)
+    return (x - x_min) / denom
+
+# Layout
+ncols = 6
+nrows = math.ceil(nx / ncols)
+
+fig_w = 18
+fig_h = 3.0 * nrows
+
+outdir = "tube_vs_diff"
+os.makedirs(outdir, exist_ok=True)
+save_path = os.path.join(outdir, f"tube_vs_diff_norm01_6perrow_N{N}_nx{nx}.png")
+
+fig, axes = plt.subplots(nrows, ncols, figsize=(fig_w, fig_h), sharex=True)
+axes = np.atleast_2d(axes)
+
+for j in range(nx):
+    r = j // ncols
+    c = j % ncols
+    ax = axes[r, c]
+
+    tube_j = tube_sizes[:, j]
+    diff_j = diff[:, j]
+
+    tube_n = minmax_01(tube_j)
+    diff_n = minmax_01(diff_j)
+
+    ax.plot(t, tube_n, linewidth=1.2, label="tube (norm)")
+    ax.plot(t, diff_n, linewidth=1.2, label="diff (norm)")
+
+    ax.set_title(f"x[{j}]", fontsize=9)
+    ax.grid(True)
+    ax.set_ylim(-0.05, 1.05)  # keep consistent scale across subplots
+
+# Turn off unused axes
+for j in range(nx, nrows * ncols):
+    r = j // ncols
+    c = j % ncols
+    axes[r, c].axis("off")
+
+for ax in axes[-1, :]:
+    ax.set_xlabel("Time [s]")
+
+# Single legend for the whole figure
+handles, labels = axes[0, 0].get_legend_handles_labels()
+fig.legend(handles, labels, loc="upper right")
+
+fig.suptitle("Tube vs deviation (per-dimension, independently normalized to [0,1])", y=0.995)
+plt.tight_layout()
+fig.savefig(save_path, dpi=250, bbox_inches="tight")
+plt.close(fig)
+
+print(f"Saved: {save_path}")
