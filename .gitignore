@@ -9,3 +9,4 @@ c_generated_code/
 *.TXT
 *.pkl
 *.egg*info/
+*.npz
