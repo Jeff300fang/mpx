@@ -322,11 +322,13 @@ def main():
     sls_cfg = SLSConfig(
         max_sls_iterations=3,
         sls_primal_tol=1e-2,
-        enable_fastsls=False
+        enable_fastsls=False,
+        warm_start=False,
     )
 
     sqp_cfg = SQPConfig(
         max_sqp_iterations = 40,
+        warm_start=False,
     )
 
     parameter = dt
@@ -359,7 +361,8 @@ def main():
     # constraints_all = combine_constraints(constraints_u, obstacle_constraints)
     # constraints_all = constraints_u
     # Total constraint count:
-    obstacles = jnp.array([[1.0, 0.08, 0.15], [1.5, -0.4, 0.15], [2.0, 0.12, 0.15], [3.0, 0.1, 0.15], [4.0, -0.6, 0.15], [2.75, -0.7, 0.15]])
+    # obstacles = jnp.array([[1.0, 0.08, 0.15], [1.5, -0.4, 0.15], [2.0, 0.12, 0.15], [3.0, 0.1, 0.15], [4.0, -0.6, 0.15], [2.75, -0.7, 0.15]])
+    obstacles = jnp.array([[1.0, 0.08, 0.15]])
     # obstacles = jnp.array([[1.0, 0.08, 0.15]])
     n_obs = obstacles.shape[0]
     # obstacles = jnp.array([])
@@ -465,17 +468,19 @@ def main():
         eps_abs=1e-1,
         eps_rel=0,
         rho_max=1e6,
-        max_iterations=1000,
+        max_iterations=400,
     )
 
     sls_cfg = SLSConfig(
         max_sls_iterations=2,
         sls_primal_tol=1e-2,
-        enable_fastsls=True
+        enable_fastsls=True,
+        warm_start=False
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 12,
+        max_sqp_iterations = 1,
+        warm_start=False
     )
     controller = GenericMPCControllerWrapper(
         sls_cfg,
@@ -530,6 +535,12 @@ def main():
     #     us.append(u0)
 
     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
+    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
+    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
+    start = time.perf_counter()
+    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
+    end = time.perf_counter()
+    print(end - start)
     disturbance_history = [jnp.zeros(X_pred[0].shape)]
     disturbed_distance = []
     disturbed_distance_y = []

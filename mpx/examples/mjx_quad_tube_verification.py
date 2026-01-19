@@ -135,7 +135,7 @@ def make_state_box_constraints(
 
     return constraints
 
-x_max = jnp.array([15.0, 15.0, 1.0])
+x_max = jnp.array([15.0, 15.0, 1.25])
 x_min = jnp.array([-15.0, -15.0, 0.25])
 
 state_box_constraints = make_state_box_constraints(x_min, x_max)
@@ -147,7 +147,7 @@ key = jax.random.PRNGKey(1)
 
 # Predefined obstacles
 num_constraints = 7
-obstacles = jnp.array([[2.0, 0.1, 0.43]])
+obstacles = jnp.array([[20.3, 0.35, 0.43]])
 centers = jnp.array([[2.0, 0.1]])
 
 radii = jnp.array([0.43])
@@ -247,7 +247,7 @@ def make_constant_disturbance(
         return jnp.broadcast_to(E0, (T, n, n))
 
     return disturbance
-E_mag = 0.2
+E_mag = 0.1
 alpha_sim = E_mag * config.dt
 disturbance = make_constant_disturbance(n=config.n, alpha=alpha_sim)
 # --------------------------------------
@@ -257,7 +257,7 @@ disturbance = make_constant_disturbance(n=config.n, alpha=alpha_sim)
 obstacle_cosntraints = partial(outside_circle_constraints, centers=centers, radii=radii)
 
 admm_config = ADMMConfig(
-        eps_abs=1e-3,
+        eps_abs=1e-2,
         eps_rel=0,
         condense_block_size=5,
         rho_max=1e5

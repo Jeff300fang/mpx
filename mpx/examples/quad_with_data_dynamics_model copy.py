@@ -34,6 +34,7 @@ from __future__ import annotations
 
 from jax import config as jax_config
 jax_config.update("jax_enable_x64", True)
+
 from typing import Callable, Optional, Tuple
 import os
 import math
@@ -51,12 +52,56 @@ from mujoco import mjx
 import mpx.config.config_go2 as config
 
 from mpx.utils.fast_sls_visual import get_trajectory_tubes
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import animation
-from matplotlib.patches import Rectangle
-from matplotlib.collections import PatchCollection
-from matplotlib.ticker import MultipleLocator
+
+
+def sample_uniform_l2_ball_np(rng: np.random.Generator, dim: int) -> np.ndarray:
+    """
+    Sample w ~ Uniform({w: ||w||_2 <= 1}) in R^dim.
+    Uses: w = r * z/||z||, z ~ N(0,I), r ~ U(0,1)^(1/dim)
+    """
+    z = rng.normal(size=(dim,))
+    z_norm = np.linalg.norm(z) + 1e-12
+    z = z / z_norm
+    r = rng.uniform(0.0, 1.0) ** (1.0 / float(dim))
+    return r * z
+
+
+def step_dynamics_with_disturbance(
+    rng: np.random.Generator,
+    step_dynamics: Callable,          # step_dynamics(x,u,t,parameter) -> x_nom_next
+    x: np.ndarray,                    # (nx,)
+    u: np.ndarray,                    # (nu,)
+    t: int,
+    parameter: np.ndarray,            # whatever your dynamics expects (often (N+1,pdim))
+    E: np.ndarray,                    # (nx, nw) (often nx x nx)
+    mode: str = "sample_ball",        # "sample_ball" | "given_w" | "fixed_w"
+    w_given: Optional[np.ndarray] = None,
+    w_fixed: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Simulates: x_{t+1} = f(x_t,u_t,t,parameter) + E @ w_t
+
+    Returns: (x_next, w_t)
+    """
+    x_nom = step_dynamics(x, u, t, parameter)
+
+    nw = E.shape[1]
+
+    if mode == "sample_ball":
+        w = sample_uniform_l2_ball_np(rng, nw)
+    elif mode == "given_w":
+        if w_given is None:
+            raise ValueError("mode='given_w' requires w_given.")
+        w = np.asarray(w_given, dtype=float).reshape(nw,)
+    elif mode == "fixed_w":
+        if w_fixed is None:
+            raise ValueError("mode='fixed_w' requires w_fixed.")
+        w = np.asarray(w_fixed, dtype=float).reshape(nw,)
+    else:
+        raise ValueError(f"Unknown mode={mode!r}")
+
+    x_next = np.asarray(x_nom) + E @ w
+    return x_next, w
 
 # -----------------------------
 # Configuration
@@ -157,56 +202,6 @@ def build_state_name_list(
     # If nx is smaller than expected, truncate; if larger, we already padded.
     return names[:nx]
 
-def sample_uniform_l2_ball_np(rng: np.random.Generator, dim: int) -> np.ndarray:
-    """
-    Sample w ~ Uniform({w: ||w||_2 <= 1}) in R^dim.
-    Uses: w = r * z/||z||, z ~ N(0,I), r ~ U(0,1)^(1/dim)
-    """
-    z = rng.normal(size=(dim,))
-    z_norm = np.linalg.norm(z) + 1e-12
-    z = z / z_norm
-    r = rng.uniform(0.0, 1.0) ** (1.0 / float(dim))
-    return r * z
-
-def step_dynamics_with_disturbance(
-    rng: np.random.Generator,
-    step_dynamics: Callable,          # step_dynamics(x,u,t,parameter) -> x_nom_next
-    x: np.ndarray,                    # (nx,)
-    u: np.ndarray,                    # (nu,)
-    t: int,
-    parameter: np.ndarray,            # whatever your dynamics expects (often (N+1,pdim))
-    E: np.ndarray,                    # (nx, nw) (often nx x nx)
-    mode: str = "sample_ball",        # "sample_ball" | "given_w" | "fixed_w"
-    w_given: Optional[np.ndarray] = None,
-    w_fixed: Optional[np.ndarray] = None,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Simulates: x_{t+1} = f(x_t,u_t,t,parameter) + E @ w_t
-
-    Returns: (x_next, w_t)
-    """
-    x_nom = step_dynamics(x, u, t, parameter)
-
-    nw = E.shape[1]
-
-    if mode == "sample_ball":
-        w = sample_uniform_l2_ball_np(rng, nw)
-    elif mode == "given_w":
-        if w_given is None:
-            raise ValueError("mode='given_w' requires w_given.")
-        w = np.asarray(w_given, dtype=float).reshape(nw,)
-    elif mode == "fixed_w":
-        if w_fixed is None:
-            raise ValueError("mode='fixed_w' requires w_fixed.")
-        w = np.asarray(w_fixed, dtype=float).reshape(nw,)
-    else:
-        raise ValueError(f"Unknown mode={mode!r}")
-    w = np.zeros(nw)
-    w[0] = 1.0
-    # w[1] = 0.707
-    x_next = np.asarray(x_nom) + E @ w
-    return x_next, w
-
 
 def main():
     assert os.path.exists(NPZ_PATH), f"Missing file: {NPZ_PATH}"
@@ -218,7 +213,6 @@ def main():
     U = data["U"]  # (N, nu)
     Phi_x = data["Phi_x"] if "Phi_x" in data.files else None
     Phi_u = data["Phi_u"]
-
     if "parameter" not in data.files:
         raise RuntimeError(
             "NPZ is missing required array 'parameter'.\n"
@@ -228,7 +222,6 @@ def main():
     parameter_np = data["parameter"]  # (N+1, p_dim)
 
     N = U.shape[0]
-    # N = 50
     nx = X.shape[1]
 
     # -----------------------------
@@ -315,37 +308,32 @@ def main():
     # One-step roll-forward errors
     # -----------------------------
     abs_err = np.zeros((N, len(idx)), dtype=np.float64)
+    disturbance_history = np.zeros((N, len(idx)), dtype=np.float64)
     base_pose_err = np.zeros((N,), dtype=np.float64)
     x_i = X_j[0]
     diag = np.zeros(nx)
-    diag[:2] = 0.002
+    diag[:2] = 0.004
     E = np.diag(diag)
     rng = np.random.default_rng(0)
-    disturbance_history = [np.zeros(nx)]
-    plan_xy = X[1:, :2]
-    tubes = get_trajectory_tubes(Phi_x)
-    tube_sizes = np.asarray(tubes[1: N + 1])
-    tube_xy = tube_sizes[:, :2]
-    lower = plan_xy - tube_xy
-    upper = plan_xy + tube_xy
-    actual = np.zeros((N, nx))
     for i in range(N):
-        # x_i = X[i])
-        # x_model_next = step_dynamics(x_i, u_i, i, parameter_j)
-        disturbance_feedback = np.zeros(U_tau[0].shape[0])
-        for j in range(i + 1):
-            disturbance_feedback += Phi_u[i, j] @ disturbance_history[j]
-        u0 = U_tau[i] + disturbance_feedback
-        x_model_next, w_i = step_dynamics_with_disturbance(
-            rng, step_dynamics, x_i, u0, i, parameter_np, E,
-            mode="sample_ball",
-        )
-        x_i = x_model_next 
-        disturbance_history.append(w_i)
+        u_i = U_tau[i]
+        # x_i = X[i]
+        disturbance_feedback_sum = np.zeros((u_i.shape[0],))
+        for j in range(i):
+            disturbance_feedback_sum += Phi_u[i, j + 1] @ disturbance_history[j]
+        # u0 = u_i + disturbance_feedback_sum
+        u0 = u_i
+        # x_model_next, w_i = step_dynamics_with_disturbance(
+        #     rng, step_dynamics, x_i, u0, i, parameter_np, E,
+        #     mode="sample_ball",
+        # )
+        x_model_next = step_dynamics(x_i, u0, i, parameter_np)
+
         x_pred = np.asarray(X[i + 1], dtype=np.float64)
         x_act = np.asarray(x_model_next, dtype=np.float64)
-        actual[i] = x_act
+
         abs_err[i] = np.abs(x_act[idx] - x_pred[idx])
+        # disturbance_history[i] = w_i
         base_pose_err[i] = np.linalg.norm(x_act[:7] - x_pred[:7])
 
         print(f"Step {i:3d}/{N}: base_pose_err={base_pose_err[i]:.6e}")
@@ -370,7 +358,7 @@ def main():
     if MAKE_TUBE_PLOT and (Phi_x is not None):
         diff = abs_err  # (N, len(idx))
         tubes = get_trajectory_tubes(Phi_x)
-        tube_sizes = np.asarray(tubes[1: N + 1])  # (N, nx_full) typically
+        tube_sizes = np.asarray(tubes[1:])  # (N, nx_full) typically
 
         # If comparing only a subset, slice tube sizes to the same indices
         tube_sizes = tube_sizes[:, idx]
@@ -423,209 +411,7 @@ def main():
         if MAKE_TUBE_PLOT and Phi_x is None:
             print("Skipping tube plot: Phi_x not found in NPZ.")
 
-    # plan_xy = X[:, :2]
-    # tube_xy = tube_sizes[:1, :2]
-    # lower = plan_xy - tube_xy
-    # upper = plan_xy + tube_xy
-    # actual = np.zeros((N, nx))
-    centers = []
-    radii = []
-    save_replay(
-        actual,
-        centers,
-        radii,
-        plans_xy=plan_xy,
-        lowers_xy=lower,
-        uppers_xy=upper,
-        filename="go2_replay.mp4",
-        dt=dt,
-        fps=int(round(1.0 / dt)),
-        box_stride=1,
-    )
-    
     print("Done.")
-
-def save_replay(
-    xs,
-    centers,
-    radii,
-    plans_xy,
-    lowers_xy,
-    uppers_xy,
-    filename: str = "replay.mp4",
-    dt: float = 0.1,
-    fps: int | None = None,
-    box_stride: int = 1,
-    margin: float = 0.5,
-):
-    """
-    Replay that shows, per step t:
-      - executed trajectory up through x_{t+1}
-      - a nominal XY path (either per-step plan or a single 2D plan)
-      - tube rectangles (either per-step or a single 2D tube)
-      - obstacle circles
-
-    Supported shapes:
-
-    Case 1 (per-step MPC plans):
-      xs        : (n_steps, nx) or (n_steps+1, nx) [we use xs[:,0:2]]
-      plans_xy  : (n_steps, H+1, 2)
-      lowers_xy : (n_steps, H+1, 2)
-      uppers_xy : (n_steps, H+1, 2)
-
-    Case 2 (single nominal path + tube):
-      xs        : (n_steps, nx) or (n_steps+1, nx)
-      plans_xy  : (T, 2)
-      lowers_xy : (T, 2)
-      uppers_xy : (T, 2)
-    """
-    xs = np.asarray(xs)
-    centers = np.asarray(centers)
-    radii = np.asarray(radii)
-
-    plans_xy = np.asarray(plans_xy)
-    lowers_xy = np.asarray(lowers_xy)
-    uppers_xy = np.asarray(uppers_xy)
-
-    # Detect whether we have per-step plans (3D) or a single plan (2D)
-    per_step = (plans_xy.ndim == 3)
-
-    if per_step:
-        n_steps = plans_xy.shape[0]
-        if n_steps == 0:
-            raise ValueError("plans_xy is empty; nothing to replay.")
-    else:
-        # Single nominal plan: use executed length for frames
-        n_steps = xs.shape[0]
-        if n_steps == 0:
-            raise ValueError("xs is empty; nothing to replay.")
-
-    # --- fps / interval ---
-    if fps is None:
-        fps = max(1, int(round(1.0 / dt)))
-    interval_ms = int(round(1000.0 / fps))
-
-    xs_len = xs.shape[0]
-
-    # --- Axis limits from executed + plans + tubes ---
-    all_px = [xs[:, 0].ravel()]
-    all_py = [xs[:, 1].ravel()]
-
-    if per_step:
-        all_px += [plans_xy[:, :, 0].ravel(), lowers_xy[:, :, 0].ravel(), uppers_xy[:, :, 0].ravel()]
-        all_py += [plans_xy[:, :, 1].ravel(), lowers_xy[:, :, 1].ravel(), uppers_xy[:, :, 1].ravel()]
-    else:
-        all_px += [plans_xy[:, 0].ravel(), lowers_xy[:, 0].ravel(), uppers_xy[:, 0].ravel()]
-        all_py += [plans_xy[:, 1].ravel(), lowers_xy[:, 1].ravel(), uppers_xy[:, 1].ravel()]
-
-    if centers.size:
-        all_px.append(centers[:, 0].ravel())
-        all_py.append(centers[:, 1].ravel())
-
-    all_px = np.concatenate(all_px)
-    all_py = np.concatenate(all_py)
-
-    xmin, xmax = float(all_px.min() - margin), float(all_px.max() + margin)
-    ymin, ymax = float(all_py.min() - margin), float(all_py.max() + margin)
-
-    # --- Figure ---
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.set_aspect("equal", adjustable="box")
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
-
-    ax.xaxis.set_major_locator(MultipleLocator(0.5))
-    ax.yaxis.set_major_locator(MultipleLocator(0.5))
-
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_title("Go2 Replay: Executed + Nominal + Tube Boxes")
-
-    # Obstacles
-    for c, r in zip(centers, radii):
-        ax.add_patch(plt.Circle((float(c[0]), float(c[1])), float(r), color="red", alpha=0.35))
-
-    # Artists
-    executed_line, = ax.plot([], [], lw=2, alpha=0.8, label="Executed (closed-loop)")
-    planned_line,  = ax.plot([], [], lw=2, ls="--", alpha=0.9, label="Nominal")
-    cur_pt = ax.scatter([], [], marker="o", s=50, label="Current state")
-    end_pt = ax.scatter([], [], marker="x", s=60, label="End of nominal")
-
-    tube_boxes = PatchCollection([], alpha=0.20, match_original=False, label="Robust tubes")
-    ax.add_collection(tube_boxes)
-
-    ax.grid(True)
-    ax.legend(loc="lower left", bbox_to_anchor=(-0.1, -0.35), framealpha=0.9)
-
-    title = ax.text(0.02, 0.98, "", transform=ax.transAxes, va="top", ha="left")
-
-    def init():
-        executed_line.set_data([], [])
-        planned_line.set_data([], [])
-        cur_pt.set_offsets(np.zeros((0, 2)))
-        end_pt.set_offsets(np.zeros((0, 2)))
-        tube_boxes.set_paths([])
-        title.set_text("")
-        return executed_line, planned_line, cur_pt, end_pt, tube_boxes, title
-
-    def update(t: int):
-        # executed through x_{t+1}
-        t_next = min(t + 1, xs_len - 1)
-        executed_line.set_data(xs[: t_next + 1, 0], xs[: t_next + 1, 1])
-        cur_pt.set_offsets(np.array([[xs[t_next, 0], xs[t_next, 1]]]))
-
-        if per_step:
-            # Use the plan at step t
-            pl = plans_xy[t]
-            lo = lowers_xy[t]
-            up = uppers_xy[t]
-            pl_px, pl_py = pl[:, 0], pl[:, 1]
-        else:
-            # Use the single nominal plan, but optionally only show “future” from t onward
-            pl = plans_xy
-            lo = lowers_xy
-            up = uppers_xy
-            # show full plan (simplest, robust)
-            pl_px, pl_py = pl[:, 0], pl[:, 1]
-
-        planned_line.set_data(pl_px, pl_py)
-        end_pt.set_offsets(np.array([[pl_px[-1], pl_py[-1]]]))
-
-        rects = []
-        stride = max(int(box_stride), 1)
-        for k in range(0, lo.shape[0], stride):
-            w = up[k, 0] - lo[k, 0]
-            h = up[k, 1] - lo[k, 1]
-            if not np.isfinite(w) or not np.isfinite(h):
-                continue
-            if w < 0.0 or h < 0.0:
-                continue
-            rects.append(Rectangle((lo[k, 0], lo[k, 1]), w, h))
-        tube_boxes.set_paths(rects)
-
-        title.set_text(f"Step {t}/{n_steps-1} (showing x_{t_next})")
-        return executed_line, planned_line, cur_pt, end_pt, tube_boxes, title
-
-    ani = animation.FuncAnimation(
-        fig, update, frames=n_steps, init_func=init, blit=True, interval=interval_ms
-    )
-
-    ext = filename.lower().split(".")[-1]
-    if ext == "mp4":
-        if animation.FFMpegWriter.isAvailable():
-            writer = animation.FFMpegWriter(fps=fps)
-            ani.save(filename, writer=writer, dpi=200)
-        else:
-            raise RuntimeError("Requested .mp4 but ffmpeg is not available. Install ffmpeg or save as .gif.")
-    elif ext == "gif":
-        writer = animation.PillowWriter(fps=fps)
-        ani.save(filename, writer=writer)
-    else:
-        raise ValueError(f"Unsupported extension .{ext}. Use .mp4 or .gif.")
-
-    plt.close(fig)
-
-
 
 
 if __name__ == "__main__":
