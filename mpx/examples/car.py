@@ -110,8 +110,8 @@ def dubins_step_with_disturbance(
 
     n = jnp.asarray(x.shape[0], dtype=x.dtype)  # n = 3, but keep generic
     r = jax.random.uniform(key_rad, (), minval=0.0, maxval=1.0, dtype=x.dtype) ** (1.0 / n)
-    # w = r * z  # ||w||_2 <= 1
-    w = jnp.array([0.0, -1.0, 0])
+    w = r * z  # ||w||_2 <= 1
+    # w = jnp.array([0.0, 1.0, 0])
 
     # Additive disturbance
     x_next = x_nom + E @ w
@@ -298,8 +298,8 @@ def main():
     nu = 2     # [v, omega]
 
     # Horizon and dt
-    N = 100
-    dt = 0.025
+    N = 10
+    dt = 2.5 / N
 
     # Weights: (x, y, theta, v, omega)
     W = jnp.array([5.0, 5.0, 0.1, 0.1, 0.1])
@@ -313,7 +313,7 @@ def main():
     )
 
     admm_cfg = ADMMConfig(
-        eps_abs=3e-2,
+        eps_abs=1e-2,
         eps_rel=0,
         rho_max=1e5,
         max_iterations=1000,
@@ -327,7 +327,7 @@ def main():
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 40,
+        max_sqp_iterations = 60,
         warm_start=False,
     )
 
@@ -361,6 +361,7 @@ def main():
     # constraints_all = combine_constraints(constraints_u, obstacle_constraints)
     # constraints_all = constraints_u
     # Total constraint count:
+    # obstacles = jnp.array([[1.0, 0.08, 0.15], [1.5, -0.4, 0.15], [2.0, 0.12, 0.15], [3.0, 0.1, 0.15], [4.0, -0.6, 0.15], [2.75, -0.7, 0.15]])
     # obstacles = jnp.array([[1.0, 0.08, 0.15], [1.5, -0.4, 0.15], [2.0, 0.12, 0.15], [3.0, 0.1, 0.15], [4.0, -0.6, 0.15], [2.75, -0.7, 0.15]])
     obstacles = jnp.array([[1.0, 0.08, 0.15]])
     # obstacles = jnp.array([[1.0, 0.08, 0.15]])
@@ -465,7 +466,7 @@ def main():
     end = time.perf_counter()
     jax.debug.print("Nominal trajectory done")
     admm_cfg = ADMMConfig(
-        eps_abs=1e-1,
+        eps_abs=5e-2,
         eps_rel=0,
         rho_max=1e6,
         max_iterations=400,
@@ -499,61 +500,13 @@ def main():
         U_in=U_pred,
     )
     
-    # for k in range(T_steps + 1):
-    #     print(f"sim iteration {k}")
-    #     start = time.perf_counter()
-    #     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    #     u0.block_until_ready()
-    #     end = time.perf_counter()
-    #     tube = get_trajectory_tubes(Phi_x)
-    #     plan_xy = X_pred[:, :2]                     # (N+1, 2)
-    #     lower = plan_xy - tube[:, :2]
-    #     upper = plan_xy + tube[:, :2]
-
-    #     plans_xy.append(plan_xy)
-    #     lowers_xy.append(lower)
-    #     uppers_xy.append(upper)
-        
-    #     # jax.debug.print("u = {}", u0)
-    #     if k != 0:
-    #         dt_run = end - start
-    #         total_time += dt_run
-    #         min_time = min(min_time, dt_run)
-
-    #     # apply
-    #     key, x, w = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-    #     # x = dubins_step(x, u0, dt)
-    #     # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-    #     jax.debug.print("x = {} y = {}", x[0], x[1])
-    #     # jax.debug.print("x_disturb = {} y_disturb = {}", x_disturb[0], x_disturb[1])
-    #     jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)
-    #     # if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
-    #     if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
-    #         jax.debug.print("Crashed!")
-    #         # break
-    #     xs.append(x)
-    #     us.append(u0)
-
-    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    start = time.perf_counter()
-    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    end = time.perf_counter()
-    print(end - start)
-    disturbance_history = [jnp.zeros(X_pred[0].shape)]
-    disturbed_distance = []
-    disturbed_distance_y = []
-    disturbed_distance_th = []
-    tube_size = []
-    tube_size_y = []
-    tube_size_th = []
-    for k in range(T_steps):
+    for k in range(T_steps + 1):
         print(f"sim iteration {k}")
+        start = time.perf_counter()
+        u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
+        u0.block_until_ready()
+        end = time.perf_counter()
         tube = get_trajectory_tubes(Phi_x)
-        tube_size.append(tube[k + 1, 0])
-        tube_size_y.append(tube[k + 1, 1])
-        tube_size_th.append(tube[k + 1, 2])
         plan_xy = X_pred[:, :2]                     # (N+1, 2)
         lower = plan_xy - tube[:, :2]
         upper = plan_xy + tube[:, :2]
@@ -562,30 +515,75 @@ def main():
         lowers_xy.append(lower)
         uppers_xy.append(upper)
         
-        dt_run = end - start
-        total_time += dt_run
-        min_time = min(min_time, dt_run)
-        disturbance_feedback = jnp.zeros((nu,))
-        for j in range(k + 1):
-            disturbance_feedback += Phi_u[k, j] @ disturbance_history[j]
-        u0 = U_pred[k] + disturbance_feedback
+        # jax.debug.print("u = {}", u0)
+        # Disregard the warmup step
+        if k != 0:
+            dt_run = end - start
+            total_time += dt_run
+            min_time = min(min_time, dt_run)
+
         # apply
         key, x, w = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
-        disturbed_distance.append(abs(X_pred[k + 1, 0] - x[0]))
-        disturbed_distance_y.append(abs(X_pred[k + 1, 1] - x[1]))
-        dth = wrap_to_pi(X_pred[k + 1, 2] - x[2])
-        disturbed_distance_th.append(jnp.abs(dth))
-        disturbance_history.append(w)
         # x = dubins_step(x, u0, dt)
         # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
         jax.debug.print("x = {} y = {}", x[0], x[1])
         # jax.debug.print("x_disturb = {} y_disturb = {}", x_disturb[0], x_disturb[1])
         jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)
+        # if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
         if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
             jax.debug.print("Crashed!")
-            break
+            # break
         xs.append(x)
         us.append(u0)
+    # start = time.perf_counter()
+    # u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
+    # end = time.perf_counter()
+    # print(end - start)
+    # disturbance_history = [jnp.zeros(X_pred[0].shape)]
+    disturbed_distance = []
+    disturbed_distance_y = []
+    disturbed_distance_th = []
+    tube_size = []
+    tube_size_y = []
+    tube_size_th = []
+    # for k in range(T_steps):
+    #     print(f"sim iteration {k}")
+    #     tube = get_trajectory_tubes(Phi_x)
+    #     tube_size.append(tube[k + 1, 0])
+    #     tube_size_y.append(tube[k + 1, 1])
+    #     tube_size_th.append(tube[k + 1, 2])
+    #     plan_xy = X_pred[:, :2]                     # (N+1, 2)
+    #     lower = plan_xy - tube[:, :2]
+    #     upper = plan_xy + tube[:, :2]
+
+    #     plans_xy.append(plan_xy)
+    #     lowers_xy.append(lower)
+    #     uppers_xy.append(upper)
+        
+    #     dt_run = end - start
+    #     total_time += dt_run
+    #     min_time = min(min_time, dt_run)
+    #     disturbance_feedback = jnp.zeros((nu,))
+    #     for j in range(k + 1):
+    #         disturbance_feedback += Phi_u[k, j] @ disturbance_history[j]
+    #     u0 = U_pred[k] + disturbance_feedback
+    #     # apply
+    #     key, x, w = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
+    #     disturbed_distance.append(abs(X_pred[k + 1, 0] - x[0]))
+    #     disturbed_distance_y.append(abs(X_pred[k + 1, 1] - x[1]))
+    #     dth = wrap_to_pi(X_pred[k + 1, 2] - x[2])
+    #     disturbed_distance_th.append(jnp.abs(dth))
+    #     disturbance_history.append(w)
+    #     # x = dubins_step(x, u0, dt)
+    #     # key, x_disturb = dubins_step_with_disturbance(key, x, u0, E_sim, dt)
+    #     jax.debug.print("x = {} y = {}", x[0], x[1])
+    #     # jax.debug.print("x_disturb = {} y_disturb = {}", x_disturb[0], x_disturb[1])
+    #     jax.debug.print("Distance to obstacle {}", ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5)
+    #     if ((x[0] - centers[0][0]) ** 2 + (x[1] - centers[0][1]) ** 2) ** 0.5 < radii[0]:
+    #         jax.debug.print("Crashed!")
+    #         break
+    #     xs.append(x)
+    #     us.append(u0)
 
     plans_xy = jnp.stack(plans_xy, axis=0)   # (T_steps, N+1, 2)
     lowers_xy = jnp.stack(lowers_xy, axis=0) # (T_steps, N+1, 2)
@@ -607,54 +605,54 @@ def main():
         box_stride=1,
     )
 
-    import numpy as np
-    import matplotlib.pyplot as plt
+    # import numpy as np
+    # import matplotlib.pyplot as plt
 
-    # convert to numpy
-    dx_np      = np.asarray(jnp.stack(disturbed_distance))
-    dy_np      = np.asarray(jnp.stack(disturbed_distance_y))
-    dth_np     = np.asarray(jnp.stack(disturbed_distance_th))   # NEW
+    # # convert to numpy
+    # dx_np      = np.asarray(jnp.stack(disturbed_distance))
+    # dy_np      = np.asarray(jnp.stack(disturbed_distance_y))
+    # dth_np     = np.asarray(jnp.stack(disturbed_distance_th))   # NEW
 
-    tube_x_np  = np.asarray(jnp.stack(tube_size))
-    tube_y_np  = np.asarray(jnp.stack(tube_size_y))
-    tube_th_np = np.asarray(jnp.stack(tube_size_th))            # NEW
+    # tube_x_np  = np.asarray(jnp.stack(tube_size))
+    # tube_y_np  = np.asarray(jnp.stack(tube_size_y))
+    # tube_th_np = np.asarray(jnp.stack(tube_size_th))            # NEW
 
-    t = np.arange(dx_np.shape[0]) * dt
+    # t = np.arange(dx_np.shape[0]) * dt
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
+    # fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
 
-    # ---- X direction ----
-    ax1.plot(t, tube_x_np, label="tube size (x)")
-    ax1.plot(t, dx_np,     label="|x - x_nominal|")
-    ax1.set_ylabel("meters")
-    ax1.set_title("X-direction: Deviation vs Tube Size")
-    ax1.grid(True)
-    ax1.legend()
+    # # ---- X direction ----
+    # ax1.plot(t, tube_x_np, label="tube size (x)")
+    # ax1.plot(t, dx_np,     label="|x - x_nominal|")
+    # ax1.set_ylabel("meters")
+    # ax1.set_title("X-direction: Deviation vs Tube Size")
+    # ax1.grid(True)
+    # ax1.legend()
 
-    # ---- Y direction ----
-    ax2.plot(t, tube_y_np, label="tube size (y)")
-    ax2.plot(t, dy_np,     label="|y - y_nominal|")
-    ax2.set_ylabel("meters")
-    ax2.set_title("Y-direction: Deviation vs Tube Size")
-    ax2.grid(True)
-    ax2.legend()
+    # # ---- Y direction ----
+    # ax2.plot(t, tube_y_np, label="tube size (y)")
+    # ax2.plot(t, dy_np,     label="|y - y_nominal|")
+    # ax2.set_ylabel("meters")
+    # ax2.set_title("Y-direction: Deviation vs Tube Size")
+    # ax2.grid(True)
+    # ax2.legend()
 
-    # ---- Theta direction ----
-    ax3.plot(t, tube_th_np, label="tube size (theta)")
-    ax3.plot(t, dth_np,     label="|wrap(theta - theta_nominal)|")
-    ax3.set_xlabel("time (s)")
-    ax3.set_ylabel("radians")
-    ax3.set_title("Theta-direction: Deviation vs Tube Size")
-    ax3.grid(True)
-    ax3.legend()
+    # # ---- Theta direction ----
+    # ax3.plot(t, tube_th_np, label="tube size (theta)")
+    # ax3.plot(t, dth_np,     label="|wrap(theta - theta_nominal)|")
+    # ax3.set_xlabel("time (s)")
+    # ax3.set_ylabel("radians")
+    # ax3.set_title("Theta-direction: Deviation vs Tube Size")
+    # ax3.grid(True)
+    # ax3.legend()
 
-    plt.tight_layout()
-    plt.savefig(
-        "disturbance_vs_tube_size_xytheta_dubins.png",
-        dpi=300,
-        bbox_inches="tight",
-    )
-    plt.close(fig)
+    # plt.tight_layout()
+    # plt.savefig(
+    #     "disturbance_vs_tube_size_xytheta_dubins.png",
+    #     dpi=300,
+    #     bbox_inches="tight",
+    # )
+    # plt.close(fig)
 
 
 import numpy as np
