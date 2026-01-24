@@ -298,7 +298,7 @@ def main():
     nu = 2     # [v, omega]
 
     # Horizon and dt
-    N = 10
+    N = 1000
     dt = 2.5 / N
 
     # Weights: (x, y, theta, v, omega)
@@ -400,7 +400,7 @@ def main():
     x = jnp.array([0.0, 0.0, 0.0])
     # X_ref, U_ref = build_forward_reference(x, N, dt)
     # print(X_ref)
-    x_goal = jnp.array([5.0, 0.0, 0.0])  # shape (nx,)
+    x_goal = jnp.array([2.0, 0.0, 0.0])  # shape (nx,)
     X_ref = jnp.tile(x_goal[None, :], (N + 1, 1))  # shape (N+1, nx)
     reference = X_ref
     # Closed-loop rollout
@@ -466,10 +466,10 @@ def main():
     end = time.perf_counter()
     jax.debug.print("Nominal trajectory done")
     admm_cfg = ADMMConfig(
-        eps_abs=5e-2,
+        eps_abs=1e-1,
         eps_rel=0,
         rho_max=1e6,
-        max_iterations=400,
+        max_iterations=800,
     )
 
     sls_cfg = SLSConfig(

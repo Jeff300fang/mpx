@@ -3,6 +3,7 @@ from jax import numpy as jnp
 from functools import partial
 from mujoco.mjx._src import math
 from jax.scipy.spatial.transform import Rotation
+from dataclasses import dataclass
 
 def timer_run(duty_factor,step_freq, leg_time, dt):
     # Extract relevant fields
@@ -142,6 +143,259 @@ def reference_generator(use_terrain_estimator,N,dt,n_joints,n_contact,mass,foot0
     liftoff = liftoff.at[2::3].set(liftoff_z)
 
     return jnp.concatenate([p_ref, quat_ref, q_ref, dp_ref, omega_ref, foot_ref, contact_sequence,grf_ref], axis=1),jnp.concatenate([contact_sequence], axis=1), liftoff
+
+
+# def timer_run(duty_factor, step_freq, leg_time, dt):
+#     # Update timer
+#     leg_time = leg_time + dt * step_freq
+#     leg_time = jnp.where(leg_time > 1, leg_time - 1, leg_time)
+#     contact = jnp.where(leg_time < duty_factor, 1, 0)
+#     return contact, leg_time
+
+
+# def smooth_interval(z, z_min, z_max, k=10.0):
+#     return 0.5 * (jnp.tanh(k * (z - z_min)) - jnp.tanh(k * (z - z_max)))
+
+
+# def gate_2d(px, py, x_min=-3.0, x_max=3.0, y_min=-3.0, y_max=3.0, k=10.0):
+#     return smooth_interval(px, x_min, x_max, k) * smooth_interval(py, y_min, y_max, k)
+
+
+# def terrain_orientation(liftoff_pos, Ryaw):
+#     """
+#     liftoff_pos: (3*n_contact,) world-frame liftoff positions (x,y,z) per foot
+#     Ryaw:        (3,3) yaw rotation matrix
+#     Returns quaternion in (w,x,y,z) order (consistent with your jnp.roll usage).
+#     """
+#     vec_front_back = (liftoff_pos[:3] + liftoff_pos[3:6] - liftoff_pos[6:9] - liftoff_pos[9:12]) / 2.0
+#     vec_left_right = Ryaw @ jnp.array([0.0, 1.0, 0.0])  # do not adjust roll per your comment
+#     normal_vector = jnp.cross(vec_front_back, vec_left_right)
+
+#     vec_front_back = vec_front_back / (math.norm(vec_front_back) + 1e-12)
+#     vec_left_right = vec_left_right / (math.norm(vec_left_right) + 1e-12)
+#     normal_vector = normal_vector / (math.norm(normal_vector) + 1e-12)
+
+#     rotation_matrix = Rotation.from_matrix(jnp.stack([vec_front_back, vec_left_right, normal_vector], axis=1))
+#     quat_xyzw = rotation_matrix.as_quat()  # returns (x,y,z,w) in SciPy convention
+#     quat_wxyz = jnp.roll(quat_xyzw, 1)     # -> (w,x,y,z)
+#     return quat_wxyz
+
+
+# @partial(jax.jit, static_argnums=(0, 1, 2, 3, 4, 5))
+# def reference_generator(
+#     use_terrain_estimator,
+#     N,
+#     dt,
+#     n_joints,
+#     n_contact,
+#     mass,
+#     foot0,          # (3*n_contact,) nominal foot offsets in BASE frame (your convention)
+#     q0,             # (n_joints,)
+#     t_timer,        # (n_contact,)
+#     x,              # full state, must contain [p(3), quat(4), q(?), ... base vel ...]
+#     foot,           # (3*n_contact,) current foot positions in WORLD frame (your convention)
+#     input,          # (7,) [v_ref(3), w_ref(3), height]
+#     duty_factor,
+#     step_freq,
+#     step_height,
+#     liftoff,        # (3*n_contact,) world-frame liftoff positions per foot
+#     contact,        # (n_contact,) current measured contact (0/1)
+#     clearence_speed
+# ):
+#     """
+#     Returns:
+#       X_ref: (N+1, n_ref) where n_ref matches your expected concatenation:
+#         [p_ref(3), quat_ref(4), q_ref(n_joints), dp_ref(3), omega_ref(3),
+#          foot_ref(3*n_contact), contact_sequence(n_contact), grf_ref(3*n_contact)]
+#       contact_out: (N+1, n_contact) contact sequence
+#       liftoff_out: (3*n_contact,) updated liftoff positions
+#     """
+
+#     # -----------------------
+#     # Parse current state
+#     # -----------------------
+#     p = x[:3]
+#     quat = x[3:7]
+
+#     # IMPORTANT: You had dp = x[7+n_joints:10+n_joints]
+#     # Keep the same indexing you used (assumes your state layout places base lin vel there).
+#     dp = x[7 + n_joints : 10 + n_joints]
+
+#     # yaw from quaternion (w,x,y,z)
+#     yaw = jnp.arctan2(
+#         2.0 * (quat[0] * quat[3] + quat[1] * quat[2]),
+#         1.0 - 2.0 * (quat[2] * quat[2] + quat[3] * quat[3]),
+#     )
+#     Ryaw = jnp.array(
+#         [
+#             [jnp.cos(yaw), -jnp.sin(yaw), 0.0],
+#             [jnp.sin(yaw),  jnp.cos(yaw), 0.0],
+#             [0.0,           0.0,          1.0],
+#         ]
+#     )
+
+#     # Height heuristic (your original logic)
+#     proprio_height = input[6] + jnp.sum(liftoff[2::3]) / n_contact
+#     p = jnp.array([p[0], p[1], proprio_height])
+
+#     # Orientation reference (terrain estimator optional)
+#     if use_terrain_estimator:
+#         quat0_ref = terrain_orientation(liftoff, Ryaw)      # (4,)
+#     else:
+#         quat0_ref = jnp.array([1.0, 0.0, 0.0, 0.0])
+#     quat_ref = jnp.tile(quat0_ref, (N + 1, 1))
+
+#     # Pitch compensation (your original)
+#     pitch = jnp.arcsin(2.0 * (quat_ref[0, 0] * quat_ref[0, 2] - quat_ref[0, 3] * quat_ref[0, 1]))
+#     Rpitch = jnp.array(
+#         [
+#             [jnp.cos(pitch), 0.0, jnp.sin(pitch)],
+#             [0.0,            1.0, 0.0],
+#             [-jnp.sin(pitch), 0.0, jnp.cos(pitch)],
+#         ]
+#     )
+
+#     # Reference velocities
+#     ref_lin_vel = Ryaw @ Rpitch @ input[:3]
+#     ref_ang_vel = input[3:6]
+
+#     # Base position reference
+#     p_ref_x = jnp.arange(N + 1) * dt * ref_lin_vel[0] + p[0]
+#     p_ref_y = jnp.arange(N + 1) * dt * ref_lin_vel[1] + p[1]
+#     p_ref_z = jnp.ones(N + 1) * proprio_height
+#     p_ref = jnp.stack([p_ref_x, p_ref_y, p_ref_z], axis=1)
+
+#     dp_ref = jnp.tile(ref_lin_vel, (N + 1, 1))
+#     omega_ref = jnp.tile(ref_ang_vel, (N + 1, 1))
+#     q_ref = jnp.tile(q0, (N + 1, 1))
+
+#     # Initialize foot reference with current foot WORLD positions
+#     foot_ref = jnp.tile(foot, (N + 1, 1))
+
+#     # GRF reference
+#     grf_ref = jnp.zeros((N + 1, 3 * n_contact))
+
+#     # Contact sequence and timer sequence buffers
+#     contact_sequence = jnp.zeros((N + 1, n_contact))
+#     timer_sequence_in = jnp.tile(t_timer, (N + 1, 1))
+
+#     # Early contact (NOTE: kept as in your original; if you want it time-varying, move it into the loop)
+#     des_contact, current_timer = timer_run(duty_factor, step_freq, t_timer, dt)
+#     early_contact = jnp.where(
+#         jnp.logical_and(
+#             jnp.logical_and(des_contact == 0, contact == 1),
+#             current_timer > 0.5 + 0.5 * duty_factor,
+#         ),
+#         1,
+#         0,
+#     )
+
+#     # Liftoff trackers (per-foot)
+#     liftoff_x = liftoff[::3]
+#     liftoff_y = liftoff[1::3]
+#     liftoff_z = liftoff[2::3]
+
+#     # Precompute constants used in swing splines
+#     initial_speed = -ref_lin_vel / (jnp.linalg.norm(ref_lin_vel) + 1e-6) * clearence_speed
+
+#     def foot_fn(t, carry):
+#         timer_seq, contact_seq, new_foot, lo_x, lo_y, lo_z, grf_new = carry
+
+#         # previous foot world positions
+#         prev_fx = new_foot[t - 1, ::3]
+#         prev_fy = new_foot[t - 1, 1::3]
+#         prev_fz = new_foot[t - 1, 2::3]
+
+#         # advance timers / contact
+#         new_contact, new_t = timer_run(duty_factor, step_freq, timer_seq[t - 1, :], dt)
+#         contact_seq = contact_seq.at[t, :].set(new_contact)
+#         timer_seq = timer_seq.at[t, :].set(new_t)
+
+#         # detect liftoff (stance->swing transition)
+#         lo_x = jnp.where(jnp.logical_and(jnp.logical_not(contact_seq[t, :]), contact_seq[t - 1, :]), prev_fx, lo_x)
+#         lo_y = jnp.where(jnp.logical_and(jnp.logical_not(contact_seq[t, :]), contact_seq[t - 1, :]), prev_fy, lo_y)
+#         lo_z = jnp.where(jnp.logical_and(jnp.logical_not(contact_seq[t, :]), contact_seq[t - 1, :]), prev_fz, lo_z)
+
+#         # ------------- KEY FIX: time-varying nominal foothold anchor -------------
+#         # Use p_ref[t] so the touchdown target advances with the moving base.
+#         p_t = p_ref[t]  # (3,)
+
+#         # foot0: (3*n_contact,) nominal offsets in BASE frame
+#         foot0_mat = foot0.reshape(n_contact, 3)            # (n_contact, 3)
+#         foot0_world = (foot0_mat @ Ryaw.T) + p_t           # (n_contact, 3)
+#         foot0_projected_t = foot0_world.reshape(-1)        # (3*n_contact,)
+
+#         def calc_foothold(direction):
+#             f1 = 0.5 * ref_lin_vel[direction] * duty_factor / step_freq
+#             f2 = jnp.sqrt(input[6] / 9.81) * (dp[direction] - ref_lin_vel[direction])
+#             return foot0_projected_t[direction::3] + f1 + f2
+
+#         foothold_x = calc_foothold(0)
+#         foothold_y = calc_foothold(1)
+#         # -----------------------------------------------------------------------
+
+#         def cubic_splineXY(current_foot, foothold, initial_velocity, val):
+#             a0 = current_foot
+#             a1 = initial_velocity
+#             a2 = 3.0 * (foothold - current_foot) - 2.0 * initial_velocity
+#             a3 = initial_velocity - 2.0 * (foothold - current_foot)
+#             return a0 + a1 * val + a2 * val**2 + a3 * val**3
+
+#         def cubic_splineZ(current_foot, foothold, step_h, val):
+#             initial_speed_z = 0.7
+#             a = 16 * step_h - 8 * foothold - 8 * current_foot - 2 * initial_speed_z
+#             b = 5 * initial_speed_z + 14 * foothold + 18 * current_foot - 32 * step_h
+#             c = 16 * step_h - 5 * foothold - 11 * current_foot - 4 * initial_speed_z
+#             d = initial_speed_z
+#             e = current_foot
+#             return a * val**4 + b * val**3 + c * val**2 + d * val + e
+
+#         # phase in swing [0,1]
+#         swing_phase = (new_t - duty_factor) / (1.0 - duty_factor + 1e-12)
+
+#         # stance: hold foot fixed in world; swing: move to foothold
+#         fx = jnp.where(
+#             jnp.logical_or(new_contact > 0, early_contact == 1),
+#             prev_fx,
+#             cubic_splineXY(lo_x, foothold_x, initial_speed[0], swing_phase),
+#         )
+#         fy = jnp.where(
+#             jnp.logical_or(new_contact > 0, early_contact == 1),
+#             prev_fy,
+#             cubic_splineXY(lo_y, foothold_y, initial_speed[1], swing_phase),
+#         )
+#         fz = jnp.where(
+#             jnp.logical_or(new_contact > 0, early_contact == 1),
+#             prev_fz,
+#             cubic_splineZ(lo_z, lo_z, lo_z + step_height, swing_phase),
+#         )
+
+#         new_foot = new_foot.at[t, ::3].set(fx)
+#         new_foot = new_foot.at[t, 1::3].set(fy)
+#         new_foot = new_foot.at[t, 2::3].set(fz)
+
+#         # simple vertical GRF allocation in stance
+#         grf_new = grf_new.at[t, 2::3].set(new_contact * mass * 9.81 / (jnp.sum(new_contact) + 1e-5))
+
+#         return (timer_seq, contact_seq, new_foot, lo_x, lo_y, lo_z, grf_new)
+
+#     init_carry = (timer_sequence_in, contact_sequence, foot_ref, liftoff_x, liftoff_y, liftoff_z, grf_ref)
+
+#     # IMPORTANT: start at t=1 because foot_fn indexes t-1
+#     timer_sequence, contact_sequence, foot_ref, liftoff_x, liftoff_y, liftoff_z, grf_ref = \
+#         jax.lax.fori_loop(1, N + 1, foot_fn, init_carry)
+
+#     liftoff = liftoff.at[::3].set(liftoff_x)
+#     liftoff = liftoff.at[1::3].set(liftoff_y)
+#     liftoff = liftoff.at[2::3].set(liftoff_z)
+
+#     X_ref = jnp.concatenate(
+#         [p_ref, quat_ref, q_ref, dp_ref, omega_ref, foot_ref, contact_sequence, grf_ref],
+#         axis=1
+#     )
+
+#     return X_ref, contact_sequence, liftoff
+
 
 @partial(jax.jit, static_argnums=(0,1,2,3))
 def reference_generator_srbd(use_terrain_estimator,N,dt,n_contact,mass,foot0,t_timer, x, foot, input, duty_factor, step_freq,step_height,liftoff,contact,clearence_speed):
@@ -398,7 +652,18 @@ def reference_barell_roll(N,dt,n_joints,n_contact,foot0,q0):
 
     return jnp.concatenate([p_ref, quat_ref, q_ref, dp_ref, omega_ref, foot_ref, contact_sequence, grf_ref], axis=1), jnp.concatenate([contact_sequence, foot_ref], axis=1)
 
+def circle_pose_constraint(X, U, obstacle):
+    # X: (T+1, n), U: (T, m)
+    # Example 1: state stays inside a circle of radius r (convex)
+    r = obstacle.radius
+    pos = X[:, :2]
+    g_circle = jnp.sum(pos**2, axis=-1) - r**2          # (T+1,), <= 0
 
+    # Example 2: control effort magnitude constraint ||u_t||^2 <= umax^2
+    umax = 0.5
+    g_u = jnp.sum(U**2, axis=-1) - umax**2              # (T,), <= 0
+
+    return jnp.concatenate([g_circle.reshape(-1), g_u.reshape(-1)], axis=0)
 
 def outside_circle_constraints(x, u, t, centers, radii):
     """

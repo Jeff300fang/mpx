@@ -11,6 +11,7 @@ from typing import Callable
 jax.config.update("jax_compilation_cache_dir", "./jax_cache")
 jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
 jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
+jax.config.update("jax_log_compiles", True)
 # jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
  
 import numpy as np
@@ -224,7 +225,7 @@ def make_constant_disturbance(
         return jnp.broadcast_to(E0, (T, n, n))
 
     return disturbance
-E_mag = 0.2
+E_mag = 0.05
 alpha_sim = E_mag * config.dt
 disturbance = make_constant_disturbance(n=config.n, alpha=alpha_sim)
 # --------------------------------------
@@ -241,14 +242,14 @@ admm_config = ADMMConfig(
     )
 sls_config = SLSConfig(
     max_sls_iterations = 2,
-    sls_primal_tol = 1e-2,
-    enable_fastsls=False,
+    sls_primal_tol = 1e-1,
+    enable_fastsls=True,
 )
 sqp_config = SQPConfig(
     max_sqp_iterations=1
 )
 inital_state = jnp.concatenate([config.p0, config.quat0,config.q0, jnp.zeros(6+config.n_joints),config.p_legs0,jnp.zeros(3*config.n_contact)])
-X_in = jnp.tile(config.u_ref, (config.N, 1))
+X_in = jnp.tile(inital_state, (config.N + 1, 1))
 U_in = jnp.tile(config.u_ref, (config.N, 1))
 
 mpc = mpc_wrapper.MPCControllerWrapper(
@@ -309,7 +310,11 @@ while env.viewer.is_running():
                 state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
                 counter += 1
         start = timer()
-        tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u = mpc.run(qpos,qvel,input,contact)   
+        qpos_j = jnp.asarray(qpos, dtype=jnp.float32)
+        qvel_j = jnp.asarray(qvel, dtype=jnp.float32)
+        inp_j  = jnp.asarray(input, dtype=jnp.float32)
+        ct_j   = jnp.asarray(contact, dtype=jnp.bool_)
+        tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u, parameter = mpc.run(qpos,qvel,input,contact)   
         stop = timer()
         print("Time taken for MPC: ", stop-start)   
         render_obstacles(centers, radii)

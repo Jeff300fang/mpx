@@ -354,7 +354,6 @@ class MPCControllerWrapper:
 
         
         contact = jnp.array(contact)
-
         # Update the timer state for the gait reference.
         des_contact , self.contact_time = self._timer_run(self.duty_factor,self.step_freq,self.contact_time,1/self.mpc_frequency)        
         input = jnp.array(input)
@@ -373,6 +372,15 @@ class MPCControllerWrapper:
         )
 
         # Execute the MPC optimization.
+        jax.debug.print("x0: {}", x0.shape)
+        jax.debug.print("X0: {}", self.X0.shape)
+        jax.debug.print("U0: {}", self.U0.shape)
+        jax.debug.print("V0: {}", self.V0.shape)
+        jax.debug.print("HCT: {}", self.h_ct_ws.shape)
+        jax.debug.print("rho: {}", self.rho.shape)
+        jax.debug.print("w: {}", self.w.shape)
+        jax.debug.print("y: {}", self.y.shape)
+        jax.debug.print("obstacles: {}", self.obstacles.shape)
         X, U, V, w, y, rho, backoffs, Phi_x, Phi_u = self._solve(
             reference,
             parameter,
@@ -387,14 +395,17 @@ class MPCControllerWrapper:
             self.obstacles,
             self.h_ct_ws
         )
-        self.h_ct_ws = backoffs
+        self.h_ct_ws = jnp.concatenate(
+            [backoffs[self.shift:], jnp.tile(backoffs[-1:], (self.shift, 1))],
+            axis=0
+        )
         # # Warm-start for the next call: shift trajectories forward.
         self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
         self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
         self.rho = jnp.asarray(rho, dtype=self.rho.dtype)
-        rho_cap = 1e3
+        rho_cap = 1e4
         self.rho = jnp.where(self.rho > rho_cap,
-                            1e3,
+                            1e4,
                             self.rho)
         self.rho = jnp.maximum(self.rho * 0.9, 0.1)
         self.y = rho / self.rho * self.y
