@@ -246,7 +246,7 @@ class MPCControllerWrapper:
         self.V0 = jnp.zeros((config.N + 1, config.n))
         self.w = jnp.zeros((config.N + 1, num_constraints))
         self.y = jnp.zeros((config.N + 1, num_constraints))
-        self.rho = jnp.asarray(0.1)
+        self.rho = jnp.asarray(0.1, dtype=jnp.float32)
         num_obstacles = obstacles.shape[0]
         self.h_ct_ws = jnp.zeros((config.N + 1, num_constraints - num_obstacles))
 
@@ -372,15 +372,6 @@ class MPCControllerWrapper:
         )
 
         # Execute the MPC optimization.
-        jax.debug.print("x0: {}", x0.shape)
-        jax.debug.print("X0: {}", self.X0.shape)
-        jax.debug.print("U0: {}", self.U0.shape)
-        jax.debug.print("V0: {}", self.V0.shape)
-        jax.debug.print("HCT: {}", self.h_ct_ws.shape)
-        jax.debug.print("rho: {}", self.rho.shape)
-        jax.debug.print("w: {}", self.w.shape)
-        jax.debug.print("y: {}", self.y.shape)
-        jax.debug.print("obstacles: {}", self.obstacles.shape)
         X, U, V, w, y, rho, backoffs, Phi_x, Phi_u = self._solve(
             reference,
             parameter,
