@@ -61,7 +61,7 @@ ax.set_xscale("log")
 ax.set_yscale("log")
 ax.set_xlabel("Horizon Length")
 ax.set_ylabel("Solve Time (ms)")
-ax.set_title("Solver Scaling vs Horizon Length (Log Scale)")
+# ax.set_title("Solver Scaling vs Horizon Length (Log Scale)")
 ax.grid(True, which="both", linestyle="--", linewidth=0.5)
 
 # Extend x-range to create space for legend INSIDE axes

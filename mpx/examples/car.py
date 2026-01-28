@@ -288,7 +288,7 @@ def main():
     obstacles = jnp.array([[1.0, 0.4, 0.2], [2.0, -0.4, 0.2], [4.0, -0.2, 0.2], [0.8, -0.6, 0.2],
                            [3.0, 0.7, 0.2], [2.0, 0.5, 0.2], [5.0, -0.3, 0.2], [3.8, 1.0, 0.2],
                            [6.0, 0.0, 0.2], [9.0, 1.0, 0.2], [8.0, 1.5, 0.2], [6.2, 1.7, 0.2],
-                           [12.0, 0.4, 0.2], [11.0, 0.6, 0.2]])
+                           [12.0, 0.4, 0.2], [11.0, 0.6, 0.2], [13.0, 1.0, 0.2], [15.0, 1.3, 0.2], [16.0, 1.6, 0.2]])
 
                         #    [13.0, 0.7, 0.2], [12.0, -0.7, 0.2], [11.0, 1.1, 0.2],
                         #    [14.0, 0.7, 0.2]
@@ -310,7 +310,7 @@ def main():
     admm_cfg = ADMMConfig(
         eps_abs=1e-1,
         eps_rel=0,
-        rho_max=2e2,
+        rho_max=10,
         max_iterations=2000,
     )
 
@@ -356,7 +356,7 @@ def main():
     # nc = 2 * nu
 
     # disturbance = make_zero_disturbance(n=n)
-    E_mag = 0.1
+    E_mag = 0.075
     alpha_sim = E_mag * dt
     disturbance = make_constant_disturbance(n=n, alpha=alpha_sim)
     controller = GenericMPCControllerWrapper(
@@ -801,7 +801,7 @@ def save_replay(
         # end of plan marker
         end_pt.set_offsets(np.array([[pl_px[-1], pl_py[-1]]]))
 
-        title.set_text(f"MPC step {t}/{n_steps-1} (showing x_{t_next})")
+        # title.set_text(f"MPC step {t}/{n_steps-1} (showing x_{t_next})")
         return executed_line, planned_line, cur_pt, end_pt, tube_boxes, title
 
     ani = animation.FuncAnimation(

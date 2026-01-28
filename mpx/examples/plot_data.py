@@ -10,7 +10,7 @@ from sklearn.linear_model import LinearRegression
 # Matplotlib styling (PDF vector-safe)
 # -----------------------------
 plt.rcParams.update({
-    "font.size": 25,
+    "font.size": 18,
     "font.family": "serif",
     "font.serif": ["cmr10"],
     "mathtext.fontset": "cm",
@@ -66,7 +66,6 @@ def style_3d_axes(ax, title, xlabel, ylabel, zlabel):
     ax.set_xlabel(xlabel, labelpad=22)
     ax.set_ylabel(ylabel, labelpad=18)
     ax.set_zlabel(zlabel, labelpad=18)
-    ax.set_title(title, pad=0)
 
     ax.tick_params(axis="x", pad=6)
     ax.tick_params(axis="y", pad=6)
@@ -75,7 +74,7 @@ def style_3d_axes(ax, title, xlabel, ylabel, zlabel):
     ax.margins(x=0.08, y=0.08, z=0.08)
 
 def save_pdf(fig, path):
-    fig.savefig(path, format="pdf", bbox_inches="tight", pad_inches=0.15)
+    fig.savefig(path, format="pdf", bbox_inches="tight", pad_inches=0.5)
 
 # ------------------------------------------------------------
 # Data
@@ -103,7 +102,7 @@ xL, yL, zL = np.log10(x), np.log10(y), np.log10(z)
 # ------------------------------------------------------------
 # 1) Scatter plot (vector PDF)
 # ------------------------------------------------------------
-fig = plt.figure(figsize=(9.5, 9.5))
+fig = plt.figure(figsize=(9.5, 4.5))
 ax = fig.add_subplot(projection="3d")
 ax.view_init(elev=25, azim=40)
 
@@ -141,7 +140,7 @@ ZiL = model.predict(
 # ------------------------------------------------------------
 # 2) Surface plot (vector PDF)
 # ------------------------------------------------------------
-fig = plt.figure(figsize=(9.5, 9.5))
+fig = plt.figure(figsize=(9.0, 9.0))
 ax = fig.add_subplot(projection="3d")
 ax.view_init(elev=25, azim=20)
 
