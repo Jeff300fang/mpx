@@ -83,7 +83,7 @@ def dubins_step(
 
     return jnp.array([px_next, py_next, th_next], dtype=x.dtype)
 
-V_CONST = 1.0
+V_CONST = 2.0
 
 @jax.jit
 def dubins_step_with_disturbance(
@@ -277,20 +277,27 @@ def main():
     nu = 1     # [v, omega]
 
     # Horizon and dt
-    N = 105
-    dt = 0.1
+    N = 190
+    dt = 0.05
 
     # Weights: (x, y, theta,  omega)
-    W = jnp.array([5.0, 15.0, 0.01, 0.1])
-    obstacles = jnp.array([[1.0, 0.2, 0.2], [2.0, -0.8, 0.2], [4.0, -0.4, 0.2], [0.8, -0.8, 0.2],
-                           [3.0, 0.7, 0.2], [2.0, 0.5, 0.2], [5.0, -0.5, 0.2], [3.8, 1.0, 0.2], [7.0, 0.7,0.2],
-                           [6.0, 0.0,0.2], [6.5, 2.6, 0.2], [5.5, 2.2, 0.2], [8, -0.3, 0.2], [9, 1.8, 0.2]])
+    W = jnp.array([5.0, 10.0, 0.01, 0.1])
+    # obstacles = jnp.array([[1.0, 0.2, 0.2], [2.0, -0.8, 0.2], [4.0, -0.4, 0.2], [0.8, -0.8, 0.2],
+    #                        [3.0, 0.7, 0.2], [2.0, 0.5, 0.2], [5.0, -0.5, 0.2], [3.8, 1.0, 0.2], [7.0, 0.7,0.2],
+    #                        [6.0, 0.0,0.2], [6.5, 2.6, 0.2], [5.5, 2.2, 0.2], [8, -0.3, 0.2], [9, 1.8, 0.2]])
+    obstacles = jnp.array([[1.0, 0.4, 0.2], [2.0, -0.4, 0.2], [4.0, -0.2, 0.2], [0.8, -0.6, 0.2],
+                           [3.0, 0.7, 0.2], [2.0, 0.5, 0.2], [5.0, -0.3, 0.2], [3.8, 1.0, 0.2],
+                           [6.0, 0.0, 0.2], [9.0, 1.0, 0.2], [8.0, 1.5, 0.2], [6.2, 1.7, 0.2],
+                           [12.0, 0.4, 0.2], [11.0, 0.6, 0.2]])
+
+                        #    [13.0, 0.7, 0.2], [12.0, -0.7, 0.2], [11.0, 1.1, 0.2],
+                        #    [14.0, 0.7, 0.2]
     # [4.5, 2.0, 0.2], [5.5, 2.4, 0.2]
     # obstacles = jnp.array([[1.0, 0.08, 0.15]]) 
     # obstacles = jnp.array([[1.0, 0.08, 0.15], [1.5, -0.4, 0.15], [2.0, 0.12, 0.15], [3.0, 0.1, 0.15], [4.0, -0.6, 0.15], [2.75, -0.7, 0.15]])
     # obstacles = jnp.array([[1.0, 0.08, 0.15]])
     # obstacles = jnp.array([[1.0, 0.08, 0.15]])
-    x_goal = jnp.array([10.0, 0.0, 0.0])  # shape (nx,)  
+    x_goal = jnp.array([20.0, 0.0, 0.0])  # shape (nx,)  
 
     cfg = MPCConfig(
         n=n,
@@ -303,7 +310,7 @@ def main():
     admm_cfg = ADMMConfig(
         eps_abs=1e-1,
         eps_rel=0,
-        rho_max=1e2,
+        rho_max=2e2,
         max_iterations=2000,
     )
 
@@ -328,7 +335,7 @@ def main():
     u_max = jnp.array([ om_max])
 
     constraints_u = make_control_box_constraints(u_min, u_max)
-    x_max = jnp.array([15.0, 15.0, jnp.inf], dtype=jnp.float64)
+    x_max = jnp.array([30.0, 30.0, jnp.inf], dtype=jnp.float64)
     x_min = -x_max
 
     constraints_x = make_state_box_constraints(x_min, x_max)
@@ -440,7 +447,7 @@ def main():
     end = time.perf_counter()
     jax.debug.print("Nominal trajectory done")
     admm_cfg = ADMMConfig(
-        eps_abs=5e-2,
+        eps_abs=1e-1,
         eps_rel=0,
         rho_max=1e6,
         max_iterations=800,
@@ -454,9 +461,9 @@ def main():
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 20,
+        max_sqp_iterations = 100,
         warm_start=False,
-        line_search=False,
+        line_search=True,
     )
     controller = GenericMPCControllerWrapper(
         sls_cfg,
