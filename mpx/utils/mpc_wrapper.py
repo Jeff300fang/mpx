@@ -3,12 +3,9 @@ import jax.numpy as jnp
 from functools import partial
 import numpy as np
 import mpx.utils.mpc_utils as mpc_utils
-import mpx.utils.models as mpc_dyn_model
-import mpx.utils.objectives as mpc_objectives
 import mujoco
 from mujoco import mjx
 import mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers as optimizers
-from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMWarmStart
 import numpy as np
 from mujoco.mjx._src.dataclasses import PyTreeNode 
 # Try to import torch for dlpack conversion, but continue if torch is not available

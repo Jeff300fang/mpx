@@ -97,6 +97,18 @@ def reference_generator(use_terrain_estimator,N,dt,n_joints,n_contact,mass,foot0
 
         foothold_x = calc_foothold(0)
         foothold_y = calc_foothold(1)
+        y_min = 0.10   # meters (tune: 0.08–0.14)
+        y_max = 0.22   # meters (tune: 0.18–0.28)
+
+        # ordering is [FL, FR, RL, RR]
+        is_left = jnp.array([True, False, True, False])
+        is_right = jnp.logical_not(is_left)
+
+        foothold_y = jnp.where(
+            is_left,
+            jnp.clip(foothold_y, p[1] + y_min, p[1] + y_max),
+            jnp.clip(foothold_y, p[1] - y_max, p[1] - y_min),
+)
 
         def cubic_splineXY(current_foot, foothold,initial_velocity,val):
             a0 = current_foot
