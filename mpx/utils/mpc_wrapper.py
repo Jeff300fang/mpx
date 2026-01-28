@@ -394,9 +394,9 @@ class MPCControllerWrapper:
         self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
         self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
         self.rho = jnp.asarray(rho, dtype=self.rho.dtype)
-        rho_cap = 1e4
+        rho_cap = 1e3
         self.rho = jnp.where(self.rho > rho_cap,
-                            1e4,
+                            1e3,
                             self.rho)
         self.rho = jnp.maximum(self.rho * 0.9, 0.1)
         self.y = rho / self.rho * self.y

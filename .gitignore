@@ -10,3 +10,4 @@ c_generated_code/
 *.pkl
 *.egg*info/
 *.npz
+go2_with_ground*

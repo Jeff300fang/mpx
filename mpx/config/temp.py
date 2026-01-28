@@ -1,12 +1,12 @@
 import jax.numpy as jnp
 import jax 
-import mpx.utils.models as mpc_dyn_model
-import mpx.utils.objectives as mpc_objectives
+import quad_mpc.mpx.mpx.utils.models as mpc_dyn_model
+import quad_mpc.mpx.mpx.utils.objectives as mpc_objectives
 import os 
 from functools import partial
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-model_path = os.path.abspath(os.path.join(dir_path, '..')) + '/data/go2/go2_mjx.xml'  # Path to the MuJoCo model XML file
+model_path = '/home/jeff/vicon_quad_ws/src/quad_mpc/quad_mpc/mpx/mpx' + '/data/go2/go2_mjx.xml'  # Path to the MuJoCo model XML file
 # Contact frame names and body names for feet (or calves)
 contact_frame = ['FL', 'FR', 'RL', 'RR']
 body_name = ['FL_calf', 'FR_calf', 'RL_calf', 'RR_calf']
@@ -30,7 +30,6 @@ quat0 = jnp.array([1, 0, 0, 0])  # Initial orientation of the robot's base (quat
 q0 = jnp.array([0, 0.8, -1.6, 0, 0.8, -1.6, 0, 0.8, -1.6, 0, 0.9, -1.6])  # Initial joint angles
 q0_init = jnp.array([0, 0.8, -1.6, 0, 0.8, -1.6, 0, 0.8, -1.6, 0, 0.8, -1.6])
 
-
 p_legs0 = jnp.array([
     0.192, 0.142, .0,  # Initial position of the front left leg
     0.192, -0.142, .0, # Initial position of the front right leg
@@ -52,7 +51,7 @@ Qp    = jnp.diag(jnp.array([0, 0, 3e4]))  # Cost matrix for position
 Qrot  = jnp.diag(jnp.array([1000, 3000, 0]))  # Cost matrix for rotation
 Qq    = jnp.diag(jnp.ones(n_joints)) * 1e-1 # Cost matrix for joint angles
 Qdp   = jnp.diag(jnp.array([1, 1, 1])) * 5e3  # Cost matrix for position derivatives
-Qomega= jnp.diag(jnp.array([1e2, 1e2, 1e2]))  # Cost matrix for angular velocity
+Qomega= jnp.diag(jnp.array([1, 1, 1])) * 1e2  # Cost matrix for angular velocity
 Qdq   = jnp.diag(jnp.ones(n_joints)) * 1e-1  # Cost matrix for joint angle derivatives
 Qtau  = jnp.diag(jnp.ones(n_joints)) * 1e-1  # Cost matrix for torques
 Q_grf = jnp.diag(jnp.ones(3*n_contact)) * 1e-2  # Cost matrix for ground reaction forces

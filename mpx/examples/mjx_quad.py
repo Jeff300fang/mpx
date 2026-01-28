@@ -124,11 +124,13 @@ key = jax.random.PRNGKey(1)
 # centers, radii = random_circles(key, K=num_constraints, radius=0.43)
 
 # Predefined obstacles
-num_constraints = 5
-obstacles = jnp.array([[2.0, 0.1, 0.43]])
-centers = jnp.array([[2.0, 0.1]])
+num_constraints = 6
+# obstacles = jnp.array([[1.5, 0.2, 0.6]])
+obstacles = jnp.array([[1.0, -0.3, 0.6], [2.3, 1.3, 0.6]])
+# obstacles = jnp.array([])
+centers = jnp.array([[1.0, -0.3], [2.3, 1.3]])
 
-radii = jnp.array([0.43])
+radii = jnp.array([0.6, 0.6])
 # --------------------------------------
 
 # --------- Define Disturbance Matrices ---------
@@ -229,6 +231,32 @@ E_mag = 0.05
 alpha_sim = E_mag * config.dt
 disturbance = make_constant_disturbance(n=config.n, alpha=alpha_sim)
 # --------------------------------------
+import math
+
+def quaternion_to_rpy(w, x, y, z):
+    """
+    Convert a quaternion (w, x, y, z) to roll, pitch, yaw (radians).
+    Uses the XYZ (roll-pitch-yaw) convention.
+    """
+
+    # Roll (x-axis rotation)
+    sinr_cosp = 2 * (w * x + y * z)
+    cosr_cosp = 1 - 2 * (x * x + y * y)
+    roll = math.atan2(sinr_cosp, cosr_cosp)
+
+    # Pitch (y-axis rotation)
+    sinp = 2 * (w * y - z * x)
+    if abs(sinp) >= 1:
+        pitch = math.copysign(math.pi / 2, sinp)  # gimbal lock
+    else:
+        pitch = math.asin(sinp)
+
+    # Yaw (z-axis rotation)
+    siny_cosp = 2 * (w * z + x * y)
+    cosy_cosp = 1 - 2 * (y * y + z * z)
+    yaw = math.atan2(siny_cosp, cosy_cosp)
+
+    return roll, pitch, yaw
 
 
 # Define the MPC wrapper
@@ -243,7 +271,7 @@ admm_config = ADMMConfig(
 sls_config = SLSConfig(
     max_sls_iterations = 2,
     sls_primal_tol = 1e-1,
-    enable_fastsls=True,
+    enable_fastsls=False,
 )
 sqp_config = SQPConfig(
     max_sqp_iterations=1
@@ -284,13 +312,19 @@ while env.viewer.is_running():
  
     qpos = env.mjData.qpos.copy()
     qvel = env.mjData.qvel.copy()
+    w,x,y,z = qpos[3:7]
+    r, p, y = quaternion_to_rpy(w,x,y,z)
+    print(r, p, y)
     if (counter % (sim_frequency / mpc_frequency) == 0 or counter == 0):
     
  
         ref_base_lin_vel = env._ref_base_lin_vel_H
         # ref_base_ang_vel =  np.array([0., 0., env._ref_base_ang_yaw_dot])
-        ref_base_lin_vel = np.array([0.2, 0., 0.])
-        ref_base_ang_vel =  np.array([0., 0., 0.])
+        ref_base_lin_vel = np.array([0.05, 0., 0.])
+        ref_base_ang_vel =  np.array([0., 0.0, 0.])
+        # ref_base_lin_vel = env._ref_base_lin_vel_H
+        # ref_base_ang_vel =  np.array([0., -0.1, env._ref_base_ang_yaw_dot])
+ 
 
         input = np.array([ref_base_lin_vel[0],ref_base_lin_vel[1],ref_base_lin_vel[2],
                            ref_base_ang_vel[0],ref_base_ang_vel[1],ref_base_ang_vel[2],
