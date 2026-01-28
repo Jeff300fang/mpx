@@ -66,7 +66,7 @@ def style_3d_axes(ax, title, xlabel, ylabel, zlabel):
     ax.set_xlabel(xlabel, labelpad=22)
     ax.set_ylabel(ylabel, labelpad=18)
     ax.set_zlabel(zlabel, labelpad=18)
-    ax.set_title(title, pad=16)
+    ax.set_title(title, pad=0)
 
     ax.tick_params(axis="x", pad=6)
     ax.tick_params(axis="y", pad=6)
