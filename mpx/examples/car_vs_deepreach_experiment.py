@@ -318,11 +318,11 @@ def main():
     nu = 1     # [omega]
 
     # Horizon and dt
-    N = 101
+    N = 110
     dt = 0.1
 
     # Weights: (x, y, theta, omega)
-    W = jnp.array([25.0, 10.0, 0.01, 0.1])
+    W = jnp.array([25.0, 10.0, 0.01, 0.01])
 
     cfg = MPCConfig(
         n=n,
@@ -333,7 +333,7 @@ def main():
     )
 
     admm_cfg = ADMMConfig(
-        eps_abs=3e-2,
+        eps_abs=1e-2,
         eps_rel=0,
         rho_max=1e5,
         max_iterations=1000,
@@ -352,7 +352,7 @@ def main():
 
     parameter = dt
 
-    om_max = 3.6
+    om_max = 4.0
 
     u_min = jnp.array([-om_max])
     u_max = jnp.array([om_max])
@@ -395,7 +395,7 @@ def main():
     # Initial condition
     # -----------------------------
     x = jnp.array([-0.75, -0.75, 0.0])
-    x_goal = jnp.array([0.75, 0.3, 0.0])  # shape (nx,)
+    x_goal = jnp.array([1.0, 0.6, 0.0])  # shape (nx,)
     X_ref = jnp.tile(x_goal[None, :], (N + 1, 1))  # shape (N+1, nx)
     reference = X_ref
     T_steps = N
@@ -419,7 +419,7 @@ def main():
     end = time.perf_counter()
     jax.debug.print("Nominal trajectory done")
     admm_cfg = ADMMConfig(
-        eps_abs=1e-1,
+        eps_abs=1e-2,
         eps_rel=0,
         rho_max=1e6,
         max_iterations=1000,
@@ -563,6 +563,42 @@ def main():
         bbox_inches="tight",
     )
     plt.close(fig)
+    
+        # -----------------------------
+    # Save rollouts + tubes to NPZ
+    # -----------------------------
+    import os
+    out_dir = os.path.join(os.getcwd(), "testing_rollouts")
+    os.makedirs(out_dir, exist_ok=True)
+
+    npz_path = os.path.join(out_dir, "dubins_rollouts_tubes.npz")
+
+    # Convert lists -> arrays
+    plans_xy_np  = np.asarray(plans_xy)     # (n_steps, N+1, 2)
+    lowers_xy_np = np.asarray(lowers_xy)    # (n_steps, N+1, 2)
+    uppers_xy_np = np.asarray(uppers_xy)    # (n_steps, N+1, 2)
+
+    np.savez(
+        npz_path,
+        xs=np.asarray(xs),                      # (N_ROLLOUTS, T_steps, 3)
+        plans_xy=plans_xy_np,
+        lowers_xy=lowers_xy_np,
+        uppers_xy=uppers_xy_np,
+        centers=np.asarray(centers),
+        radii=np.asarray(radii),
+        obstacles=np.asarray(obstacles),
+        dt=float(dt),
+        N=int(N),
+        T_steps=int(T_steps),
+        V_CONST=float(V_CONST),
+        E_mag=float(E_mag),
+        alpha_sim=float(alpha_sim),
+        num_random=int(NUM_RANDOM),
+        num_adv=int(NUM_ADV),
+        seed=0,
+    )
+
+    print(f"[Saved] {npz_path}")
 
 
 import numpy as np
