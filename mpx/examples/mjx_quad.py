@@ -271,7 +271,7 @@ admm_config = ADMMConfig(
 sls_config = SLSConfig(
     max_sls_iterations = 2,
     sls_primal_tol = 1e-1,
-    enable_fastsls=False,
+    enable_fastsls=True,
 )
 sqp_config = SQPConfig(
     max_sqp_iterations=1
@@ -320,7 +320,7 @@ while env.viewer.is_running():
  
         ref_base_lin_vel = env._ref_base_lin_vel_H
         # ref_base_ang_vel =  np.array([0., 0., env._ref_base_ang_yaw_dot])
-        ref_base_lin_vel = np.array([0.05, 0., 0.])
+        ref_base_lin_vel = np.array([0.4, 0., 0.])
         ref_base_ang_vel =  np.array([0., 0.0, 0.])
         # ref_base_lin_vel = env._ref_base_lin_vel_H
         # ref_base_ang_vel =  np.array([0., -0.1, env._ref_base_ang_yaw_dot])

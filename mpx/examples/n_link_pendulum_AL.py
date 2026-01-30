@@ -1,5 +1,6 @@
 from __future__ import annotations
-
+from jax import config
+config.update("jax_enable_x64", True)
 from dataclasses import dataclass
 import time
 
@@ -10,6 +11,7 @@ from typing import Callable
 
 import jax
 import jax.numpy as jnp
+
 
 from dataclasses import dataclass
 from typing import Any
@@ -220,10 +222,10 @@ def make_random_periodic_pushes(
 
         key, sub = jax.random.split(key)
         if per_joint:
-            push = amp_max * (2.0 * jax.random.uniform(sub, (nu,), dtype=jnp.float32) - 1.0)
+            push = amp_max * (2.0 * jax.random.uniform(sub, (nu,), dtype=jnp.float64) - 1.0)
         else:
-            s = amp_max * (2.0 * jax.random.uniform(sub, (), dtype=jnp.float32) - 1.0)
-            push = jnp.ones((nu,), dtype=jnp.float32) * s
+            s = amp_max * (2.0 * jax.random.uniform(sub, (), dtype=jnp.float64) - 1.0)
+            push = jnp.ones((nu,), dtype=jnp.float64) * s
 
         return on * push
 
@@ -258,14 +260,14 @@ def main():
     N = 2000
     dt = min(0.5 / N, cfg.dt_cap)
 
-    W = jnp.array(cfg.W, dtype=jnp.float32)
+    W = jnp.array(cfg.W, dtype=jnp.float64)
 
     # Pendulum parameters
     p = NLinkParams(
-        l=jnp.ones((nlinks,), dtype=jnp.float32),
-        m=jnp.ones((nlinks,), dtype=jnp.float32),
-        I=(1.0 / 12.0) * jnp.ones((nlinks,), dtype=jnp.float32),
-        lc=0.5 * jnp.ones((nlinks,), dtype=jnp.float32),
+        l=jnp.ones((nlinks,), dtype=jnp.float64),
+        m=jnp.ones((nlinks,), dtype=jnp.float64),
+        I=(1.0 / 12.0) * jnp.ones((nlinks,), dtype=jnp.float64),
+        lc=0.5 * jnp.ones((nlinks,), dtype=jnp.float64),
         g=9.81,
         b=0.05,
     )
@@ -273,14 +275,14 @@ def main():
     # Upright reference:
     # all links point along +y => absolute angles theta_i = pi/2.
     # with relative angles q: q_ref = [pi/2, 0, 0, ...], qd_ref = 0.
-    q_ref = jnp.zeros((nlinks,), dtype=jnp.float32).at[0].set(jnp.pi / 2)
-    qd_ref = jnp.zeros((nlinks,), dtype=jnp.float32)
+    q_ref = jnp.zeros((nlinks,), dtype=jnp.float64).at[0].set(jnp.pi / 2)
+    qd_ref = jnp.zeros((nlinks,), dtype=jnp.float64)
     x_ref = jnp.concatenate([q_ref, qd_ref], axis=0)
 
     reference = jnp.tile(x_ref[None, :], (N + 1, 1))
 
     # Torque inequality constraints
-    u_max = cfg.u_max * jnp.ones((nu,), dtype=jnp.float32)
+    u_max = cfg.u_max * jnp.ones((nu,), dtype=jnp.float64)
     u_min = -u_max
     ineq = make_torque_box_inequality(u_min, u_max)
 
@@ -290,7 +292,7 @@ def main():
         nu=nu,
         N=N,
         W=W,
-        u_ref=jnp.zeros((nu,), dtype=jnp.float32),
+        u_ref=jnp.zeros((nu,), dtype=jnp.float64),
 
         # You can tune these to match your baseline behavior
         max_iterations=10000,
@@ -396,7 +398,7 @@ def main():
 
     print("Mean it_ilqr:", float(jnp.mean(it_ilqrs)))
     print("Mean it_al:", float(jnp.mean(it_als)))
-    print("Solve ok rate:", float(jnp.mean(oks.astype(jnp.float32))))
+    print("Solve ok rate:", float(jnp.mean(oks.astype(jnp.float64))))
 
     # Optional: dump raw arrays
     # print(us)

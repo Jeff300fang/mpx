@@ -2,9 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 
-# Optional: sanity check (can remove once verified)
-print(fm.findfont("cmr10"))
-
 # -----------------------------
 # Global matplotlib settings
 # -----------------------------

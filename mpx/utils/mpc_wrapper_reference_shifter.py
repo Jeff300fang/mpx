@@ -217,7 +217,8 @@ class MPCControllerWrapper:
         mjx_model = mjx.put_model(self.model)
         self.config = config
         self.mpc_frequency = config.mpc_frequency
-        self.shift = int(1 / (config.dt * config.mpc_frequency))
+        # self.shift = int(1 / (config.dt * config.mpc_frequency))
+        self.shift = 0
 
         # Timer and liftoff states for the reference generator.
         self.foot0 = config.p_legs0.copy()  # Initial foot positions (could be adjusted if needed)
@@ -240,6 +241,7 @@ class MPCControllerWrapper:
         # self.X0 = jnp.tile(self.initial_state, (config.N + 1, 1))
         self.U0 = U_in
         self.X0 = X_in
+        self.clearence_speed = 0.4 #* jnp.ones(config.n_contact)
         self.V0 = jnp.zeros((config.N + 1, config.n))
         self.w = jnp.zeros((config.N + 1, num_constraints))
         self.y = jnp.zeros((config.N + 1, num_constraints))
@@ -270,11 +272,32 @@ class MPCControllerWrapper:
             self.disturbance
         )
 
-        reference_generator = partial(mpc_utils.reference_generator,
-            config.use_terrain_estimation ,config.N, config.dt, config.n_joints, config.n_contact, robot_mass,foot0 = config.p_legs0, q0 = config.q0)
+        orig_ref_gen = partial(
+            mpc_utils.reference_generator_unlocked,
+            config.use_terrain_estimation,
+            config.N, config.dt,
+            config.n_joints, config.n_contact,
+            robot_mass,
+            foot0=config.p_legs0,
+            q0=config.q0,
+            clearence_speed=self.clearence_speed  # or set later in call if you want
+        )
+        self._ref_gen_orig = jax.jit(orig_ref_gen)
+
+        xin_ref_gen = partial(
+            mpc_utils.reference_generator_from_Xin_full,   # <--- NEW
+            config.use_terrain_estimation,
+            config.N, config.dt,
+            config.n_joints, config.n_contact,
+            robot_mass,
+            foot0=config.p_legs0,
+            q0=config.q0,
+            clearence_speed=self.clearence_speed,
+            grf_as_state=config.grf_as_state,
+        )
+        self._ref_gen_xin = jax.jit(xin_ref_gen)
 
         self._solve = jax.jit(work)
-        self._ref_gen = jax.jit(reference_generator)
         self._timer_run = jax.jit(mpc_utils.timer_run)
 
 
@@ -316,59 +339,85 @@ class MPCControllerWrapper:
         self.start_time = 0
         self.contact = np.zeros(config.n_contact)
         # self.obstacle_timer = 0
-        self.clearence_speed = 0.4 #* jnp.ones(config.n_contact)
         self.p_collision = np.zeros(3*config.n_contact)
         self.collision = [0,0,0,0]
         self.collision_cycle = np.zeros(config.n_contact)
 
-    def run(self, qpos, qvel, input, contact):
+    def run(self, qpos, qvel, input, contact, use_xin_reference=False, use_timer_contact=True):
         """
         Runs one MPC update using the current state positions, velocities, input, and contact information.
 
         Args:
             qpos: Generalized position.
             qvel: Generalized velocity.
-            input: Control input vector.
-            contact: Contact state vector.
+            input: Control input vector (will be converted to jnp).
+            contact: Contact state vector (will be converted to jnp).
+            use_xin_reference: if True, build reference (INCLUDING feet) from self.X0 (X_in warm start).
+                            if False, use the original gait-based reference_generator.
+            use_timer_contact: (only for X_in reference) if True, contact comes from timer_run; else infer from foot-z.
 
         Returns:
-            A tuple (tau, q, dq) representing the computed joint torques, joint positions, and joint velocities.
+            tau, q, dq, X0, U0, V0, backoffs, Phi_x, Phi_u, parameter
         """
-        self.contact = contact.copy()
-        #get forward kinematics for foot position
+        # store contact for logging/debug
+        self.contact = np.array(contact).copy()
 
+        # --- forward kinematics to get current foot positions in world ---
         self.data.qpos = qpos
-
         mujoco.mj_kinematics(self.model, self.data)
         foot_op = np.array([self.data.geom_xpos[self.contact_id[i]] for i in range(self.config.n_contact)]).flatten()
-        #set initial state
+
+        # set commanded/base height into input
         input[6] = self.robot_height
 
+        # --- build current state x0 (matches your dynamics state layout) ---
         if self.config.grf_as_state:
-            x0 = jnp.concatenate([qpos, qvel,foot_op,jnp.zeros(3*self.config.n_contact)])
+            x0 = jnp.concatenate([jnp.array(qpos), jnp.array(qvel), jnp.array(foot_op),
+                                jnp.zeros(3 * self.config.n_contact)])
         else:
-            x0 = jnp.concatenate([qpos, qvel,foot_op])
+            x0 = jnp.concatenate([jnp.array(qpos), jnp.array(qvel), jnp.array(foot_op)])
 
-        
-        contact = jnp.array(contact)
-        # Update the timer state for the gait reference.
-        des_contact , self.contact_time = self._timer_run(self.duty_factor,self.step_freq,self.contact_time,1/self.mpc_frequency)        
-        input = jnp.array(input)
-        # Generate reference trajectory and additional MPC parameters.
-        reference, parameter, self.liftoff = self._ref_gen(
-            duty_factor = self.duty_factor,
-            step_freq = self.step_freq,
-            step_height = self.step_height,
-            t_timer = self.contact_time.copy(),
-            x = x0,
-            foot = foot_op,
-            input = input,
-            liftoff = self.liftoff,
-            contact = contact,
-            clearence_speed = self.clearence_speed
+        # --- update gait timer (used by original generator and optionally by X_in contact) ---
+        _, self.contact_time = self._timer_run(
+            self.duty_factor, self.step_freq, self.contact_time, 1.0 / self.mpc_frequency
         )
 
-        # Execute the MPC optimization.
+        input_j = jnp.array(input)
+        contact_j = jnp.array(contact)
+
+        # =========================================================
+        # Reference generation (choose original vs X_in-driven)
+        # =========================================================
+        if use_xin_reference:
+            reference, parameter, self.liftoff = self._ref_gen_xin(
+                duty_factor=self.duty_factor,
+                step_freq=self.step_freq,
+                step_height=self.step_height,
+                t_timer=self.contact_time.copy(),
+                X_in=self.X0,                 # <-- uses base path from your warm-start trajectory
+                input=input_j,
+                liftoff=self.liftoff,
+                contact_meas=contact_j,        # <-- NOTE name matches function
+            )
+
+        else:
+            # Original gait-based reference generator (your existing one)
+            reference, parameter, self.liftoff = self._ref_gen_orig(
+                duty_factor=self.duty_factor,
+                step_freq=self.step_freq,
+                step_height=self.step_height,
+                t_timer=self.contact_time.copy(),
+                x=x0,
+                foot=foot_op,
+                input=input_j,
+                liftoff=self.liftoff,
+                contact=contact_j,
+                clearence_speed=self.clearence_speed
+            )
+
+        # =========================================================
+        # Solve MPC
+        # =========================================================
         X, U, V, w, y, rho, backoffs, Phi_x, Phi_u = self._solve(
             reference,
             parameter,
@@ -383,28 +432,36 @@ class MPCControllerWrapper:
             self.obstacles,
             self.h_ct_ws
         )
+
+        # =========================================================
+        # Warm-start shifts / dual updates
+        # =========================================================
         self.h_ct_ws = jnp.concatenate(
             [backoffs[self.shift:], jnp.tile(backoffs[-1:], (self.shift, 1))],
             axis=0
         )
-        # # Warm-start for the next call: shift trajectories forward.
+
         self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
         self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
+
         self.rho = jnp.asarray(rho, dtype=self.rho.dtype)
         rho_cap = 1e3
-        self.rho = jnp.where(self.rho > rho_cap,
-                            1e3,
-                            self.rho)
+        self.rho = jnp.where(self.rho > rho_cap, rho_cap, self.rho)
         self.rho = jnp.maximum(self.rho * 0.9, 0.1)
         self.y = rho / self.rho * self.y
-        self.U0, self.X0, self.V0, tau_temp, q_temp, dq_temp = self.update_and_extract(U, X, V, x0, self.X0, self.U0)
 
-        # TO DO change to values from config
-        tau = np.clip(np.array(tau_temp),self.config.min_torque,self.config.max_torque)
+        # shift U0/X0/V0 and extract first control/joint values
+        self.U0, self.X0, self.V0, tau_temp, q_temp, dq_temp = self.update_and_extract(
+            U, X, V, x0, self.X0, self.U0
+        )
+
+        # clip torques and return numpy for mujoco loop
+        tau = np.clip(np.array(tau_temp), self.config.min_torque, self.config.max_torque)
         q = np.array(q_temp)
         dq = np.array(dq_temp)
 
-        return tau, q, dq, self.X0, self.U0, self.V0, backoffs, Phi_x, Phi_u, parameter 
+        return tau, q, dq, self.X0, self.U0, self.V0, backoffs, Phi_x, Phi_u, parameter
+
 
     def reset(self,qpos,qvel):
         """

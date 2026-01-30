@@ -13,9 +13,9 @@ contact_frame = ['FL','RL','FR','RR']
 body_name = ['left_ankle_link','right_ankle_link']
 
 # Time and stage parameters
-dt = 0.05  # Time step in seconds
-N = 50      # Number of stages
-mpc_frequency = 20  # Frequency of MPC updates in Hz
+dt = 0.02  # Time step in seconds
+N = 25      # Number of stages
+mpc_frequency = 50  # Frequency of MPC updates in Hz
 
 # Timer values (make sure the values match your intended configuration)
 timer_t = jnp.array([0.5,0.5,0.0,0.0])  # Timer values for each leg
@@ -51,7 +51,7 @@ grf_as_state = True
 u_ref = jnp.zeros(m)  # Reference controls (concatenated torques)
 
 # Cost matrices (diagonal matrices created using jnp.diag)
-Qp = jnp.diag(jnp.array([0, 0, 1e4]))  # Cost matrix for position
+Qp = jnp.diag(jnp.array([1e3, 500, 1e4]))  # Cost matrix for position
 Qrot  = jnp.diag(jnp.array([1,1,0]))*1e3  # Cost matrix for rotation
 Qq    = jnp.diag(jnp.array([ 4e0, 4e0, 4e0, 4e0, 4e0,
                           4e0, 4e0, 4e0, 4e0, 4e0,
