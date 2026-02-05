@@ -267,36 +267,6 @@ def make_state_box_constraints(
         return jnp.concatenate([x - x_max, x_min - x], axis=0)
 
     return constraints
-\
-def save_npz_bundle(
-    filename: str,
-    X,
-    U,
-    X_pred,
-    U_pred,
-    Phi_x,
-    Phi_u,
-    obstacles,
-    E,
-    dt,
-):
-    """
-    Save full MPC + SLS rollout for offline analysis / replay.
-    """
-    np.savez(
-        filename,
-        X=np.asarray(X),
-        U=np.asarray(U),
-        X_pred=np.asarray(X_pred),
-        U_pred=np.asarray(U_pred),
-        Phi_x=np.asarray(Phi_x),
-        Phi_u=np.asarray(Phi_u),
-        obstacles=np.asarray(obstacles),
-        E=np.asarray(E),
-        dt=float(dt),
-    )
-    print(f"[Saved] {filename}")
-
 
 # -----------------------------
 # Main experiment
@@ -347,7 +317,7 @@ def main():
         eps_abs=1e-2,
         eps_rel=0,
         rho_max=10,
-        max_iterations=400,
+        max_iterations=2000,
     )
 
     sls_cfg = SLSConfig(
@@ -358,7 +328,7 @@ def main():
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 10,
+        max_sqp_iterations = 100,
         warm_start=False,
         line_search=True,
     )
@@ -477,23 +447,16 @@ def main():
     #     us.append(u0)
 
     jax.debug.print("Warmup complete.")
-    total_time = 0
-    total_pol = 0
     start = time.perf_counter()
     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
+    u0.block_until_ready()
     end = time.perf_counter()
-    print(end - start)
-    total_time += end - start
-    start = time.perf_counter()
-    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    end = time.perf_counter()
-    total_pol += (end - start)
     jax.debug.print("Nominal trajectory done")
     admm_cfg = ADMMConfig(
         eps_abs=1e-2,
         eps_rel=0,
         rho_max=1e6,
-        max_iterations=400,
+        max_iterations=800,
     )
 
     sls_cfg = SLSConfig(
@@ -504,7 +467,7 @@ def main():
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations = 1,
+        max_sqp_iterations = 100,
         warm_start=False,
         line_search=True,
     )
@@ -560,17 +523,10 @@ def main():
     #         # break
     #     xs.append(x)
     #     us.append(u0)
-    start = time.perf_counter()
+    # start = time.perf_counter()
     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    end = time.perf_counter()
-    print(end - start)
-    total_time += (end - start)
-    print("compilation:", total_time)
-    start = time.perf_counter()
-    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(x0=x, reference=reference, parameter=parameter)
-    end = time.perf_counter()
-    total_pol += (end - start)
-    print("policy", total_pol)
+    # end = time.perf_counter()
+    # print(end - start)
     disturbance_history = [jnp.zeros(X_pred[0].shape)]
     disturbed_distance = []
     disturbed_distance_y = []
@@ -635,19 +591,6 @@ def main():
         dt=dt,
         fps=int(round(1.0 / dt)),
         box_stride=1,
-    )
-
-    save_npz_bundle(
-        filename="big_dubins.npz",
-        X=xs,                 # (T, 3)
-        U=us,                 # (T, 1)
-        X_pred=X_pred,        # (N+1, 3)
-        U_pred=U_pred,        # (N, 1)
-        Phi_x=Phi_x,          # (N+1, N+1, n, n) or equivalent
-        Phi_u=Phi_u,          # (N+1, N, n, nu) or equivalent
-        obstacles=obstacles,  # (K, 3)
-        E=E_sim,              # (3, 3)
-        dt=dt,
     )
 
     # import numpy as np

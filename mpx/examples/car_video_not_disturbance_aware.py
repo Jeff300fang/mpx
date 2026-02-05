@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Callable
-
+from matplotlib.ticker import MultipleLocator
 import os
 
 import jax
@@ -338,7 +338,11 @@ def plot_rollouts_tubes_centers(
                        marker="x", s=120, linewidths=3, label="Crash (collision)")
 
     ax.set_title("Dubins: Rollouts + Robust Tube + Obstacles")
-    ax.legend(loc="best", framealpha=0.9)
+    # ax.legend(
+    #     loc="best",
+    #     bbox_to_anchor=(0.5, -0.2),
+    #     framealpha=0.9
+    # )
 
     plt.tight_layout()
     if filename is not None:
@@ -424,7 +428,10 @@ def save_single_rollout_mp4(
     ymin, ymax = float(np.nanmin(all_y) - margin), float(np.nanmax(all_y) + margin)
 
     # Figure
-    fig, ax = plt.subplots(figsize=(6, 6))
+    fig, ax = plt.subplots(figsize=(6, 6))\
+
+    ax.xaxis.set_major_locator(MultipleLocator(0.5))
+    ax.yaxis.set_major_locator(MultipleLocator(0.5))
     fig.subplots_adjust(left=0.22, right=0.98, bottom=0.15, top=0.95)
     ax.set_aspect("equal", adjustable="box")
     ax.set_xlim(xmin, xmax)
@@ -440,7 +447,7 @@ def save_single_rollout_mp4(
 
     # Fixed plan
     if show_plan and plan_xy is not None:
-        ax.plot(plan_xy[:, 0], plan_xy[:, 1], linestyle="--", linewidth=2, label="Plan")
+        ax.plot(plan_xy[:, 0], plan_xy[:, 1], linestyle="--", linewidth=2, label="Plan", color="tab:orange")
 
     # Fixed tube boxes
     if show_tubes and (lower_xy is not None) and (upper_xy is not None):
@@ -451,17 +458,21 @@ def save_single_rollout_mp4(
             if not np.isfinite(w) or not np.isfinite(h) or w < 0.0 or h < 0.0:
                 continue
             ax.add_patch(Rectangle((lower_xy[k, 0], lower_xy[k, 1]), w, h, alpha=0.15))
-        ax.plot([], [], alpha=0.15, label="Tube boxes")
+        ax.plot([], [], alpha=0.15, label="Tube boxes", color='tab:blue')
 
     # Animated artists
-    rollout_line, = ax.plot([], [], linewidth=2, label="Disturbed rollout")
-    cur_pt = ax.scatter([], [], s=50, marker="o", label="Current state")
+    rollout_line, = ax.plot([], [], linewidth=2, label="Disturbed rollout", color="tab:orange")
+    cur_pt = ax.scatter([], [], s=50, marker="o", label="Current state", color="tab:blue")
 
     # Crash marker (hidden initially)
-    crash_artist = ax.scatter([], [], marker="x", s=160, linewidths=3, label="Crash")  # shown conditionally
+    crash_artist = ax.scatter([], [], marker="x", s=160, linewidths=3, label="Crash", color="tab:orange")  # shown conditionally
 
     title = ax.text(0.02, 0.98, "", transform=ax.transAxes, va="top", ha="left")
-    ax.legend(loc="best", framealpha=0.9)
+    # ax.legend(
+    #     loc="lower right",
+    #     bbox_to_anchor=(1.0, -0.02),
+    #     framealpha=0.9
+    # )
 
     # Normalize crash info
     if crash_idx is not None:
@@ -727,7 +738,7 @@ def main():
         step_idx=0,
         tube_stride=1,
         filename="rollouts_tubes_centers.png",
-        show_plan=False,
+        show_plan=True,
         tube_alpha=0.1,
         margin=0.2,
         rollout_alpha=0.5,
@@ -836,7 +847,7 @@ def main():
         lower_xy=np.asarray(lowers_xy[0]) if len(lowers_xy) else None,
         upper_xy=np.asarray(uppers_xy[0]) if len(uppers_xy) else None,
         tube_stride=1,
-        show_plan=False,
+        show_plan=True,
         show_tubes=True,
         crash_idx=ci,
         crash_xy=cxy,
