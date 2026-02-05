@@ -32,7 +32,7 @@ def draw_circle(ax, center, radius):
     c = plt.Circle(
         center,
         radius,
-        facecolor="red",
+        facecolor="tab:blue",
         edgecolor="darkred",
         alpha=0.25,
         linewidth=1.5,
