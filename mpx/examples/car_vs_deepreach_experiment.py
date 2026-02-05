@@ -144,7 +144,7 @@ def dubins_step_with_disturbance(
     w = r * z
 
     # Optional deterministic set of w's for "adversarial" rollouts
-    jax.debug.print("{}", w)
+    # jax.debug.print("{}", w)
     start = i - NUM_RANDOM + 5
     if start == 5:
         w = jnp.array([0.0, 1.0, 0.0], dtype=x.dtype)
@@ -646,7 +646,7 @@ def main():
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations=1000,
+        max_sqp_iterations=10,
         warm_start=False
     )
 
@@ -708,14 +708,23 @@ def main():
     plans_xy = []
     lowers_xy = []
     uppers_xy = []
+    total_time = 0
 
     # -----------------------------
     # Warmup / nominal solve
     # -----------------------------
-    jax.debug.print("Warmup complete.")
     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(
         x0=x0, reference=reference, parameter=parameter
     )
+    jax.debug.print("Warmup complete.")
+    
+    import time
+    start = time.perf_counter()
+    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(
+        x0=x0, reference=reference, parameter=parameter
+    )
+    end = time.perf_counter()
+    total_time += (end - start)
     u0.block_until_ready()
     jax.debug.print("Nominal trajectory done")
 
@@ -738,7 +747,7 @@ def main():
 
     sqp_cfg = SQPConfig(
         warm_start=False,
-        max_sqp_iterations=50,
+        max_sqp_iterations=1,
     )
 
     controller = GenericMPCControllerWrapper(
@@ -763,6 +772,13 @@ def main():
     u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(
         x0=x0, reference=reference, parameter=parameter
     )
+    import time
+    start = time.perf_counter()
+    u0, X_pred, U_pred, V_pred, backoffs, Phi_x, Phi_u = controller.run(
+        x0=x0, reference=reference, parameter=parameter
+    )
+    end = time.perf_counter()
+    total_time += end - start
 
     tube = get_trajectory_tubes(Phi_x)              # (N+1, n) presumably
     plan_xy = X_pred[:, :2]
@@ -790,7 +806,7 @@ def main():
                 stop_steps[i] = k
                 break
 
-            print(f"sim iteration {k}")
+            # print(f"sim iteration {k}")
 
             # u = U_pred[k] + sum_{j<=k} Phi_u[k,j] w_j
             disturbance_feedback = jnp.zeros((nu,), dtype=jnp.float64)
@@ -915,6 +931,7 @@ def main():
     )
 
     print(f"[Saved] {npz_path}")
+    print(total_time)
 
 if __name__ == "__main__":
     main()
