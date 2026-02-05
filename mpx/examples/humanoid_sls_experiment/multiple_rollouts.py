@@ -8,14 +8,19 @@ then generate:
 1) A 2D tube replay animation (executed trajectory + nominal + tube boxes + obstacles)
 2) (Optional) A "6 plots per row" tube-vs-diff visualization for each selected state dimension
 
-THIS VERSION:
-  - Removes the previous w-estimation/inference logic entirely.
-  - If Phi_u is present and USE_SLS_FEEDBACK=True, it samples an exogenous disturbance w_t
-    (uniform in a unit L2 ball) ONLY in the first 3 dimensions; all remaining dims are zero.
-  - Uses that sampled w_t for BOTH:
-      (a) the SLS feedback law u_t = u_nom + sum_j Phi_u[t,j] w_j
-      (b) state disturbance injection: x_{t+1} = f(x_t,u_t,...) + E @ w_t
-    where E is a diagonal-like mapping (nx x n_w) with nonzeros on the first E_FIRST_K diagonals.
+UPDATED VERSION (MULTI-ROLLOUTS WITH PREDEFINED DISTURBANCES):
+  - Runs N_ROLLOUTS executed rollouts using Phi_u feedback and a predefined disturbance
+    sequence W_seq per rollout.
+  - W_seq has shape (H, n_w) per rollout (H = horizon length after truncation).
+  - Saves ALL rollouts to NPZ:
+        data.npz contains:
+          - X (stored trajectory)
+          - tube_sizes
+          - X_rollouts        shape (N_ROLLOUTS, H+1, nx)   [if SLS feedback enabled]
+          - W_rollouts        shape (N_ROLLOUTS, H+1, n_w)
+          - U_applied_rollouts shape (N_ROLLOUTS, H, m)     [optional]
+        otherwise:
+          - X_rollout         shape (H+1, nx)               [nominal fallback]
 
 No argparse: configure via variables in the "USER CONFIG" block below.
 """
@@ -67,7 +72,7 @@ MARGIN = 0.75
 SHOW_OBSTACLES = True   # if NPZ has 'obstacles'
 
 # ---- Nominal path source for tube boxes/nominal line ----
-# "stored" uses X from NPZ, "sim" uses X_sim
+# "stored" uses X from NPZ, "sim" uses X_sim (selected rollout)
 NOMINAL_SOURCE = "stored"  # "stored" or "sim"
 
 # ---- Tube grid config ----
@@ -80,14 +85,24 @@ USE_SLS_FEEDBACK = True    # requires Phi_u in NPZ
 E_SCALE = 0.1
 E_FIRST_K = 3
 
-# Disturbance sampling:
-# sample w_t only in the first 3 dims (uniform L2 ball), zeros elsewhere.
-W_SEED = 0
-W_RADIUS = 1.0  # unit ball if 1.0
+# Disturbance bank:
+# If W_PREDEF_PATH is provided, load it as shape (N_ROLLOUTS, H, n_w).
+# Otherwise generate deterministically using base seed and W_RADIUS (still "predefined" once generated).
+N_ROLLOUTS = 10
+W_PREDEF_PATH = None       # e.g. "mpc_data/predefined_W.npy"
+W_SEED = 0                 # used only for deterministic generation
+W_RADIUS = 1.0             # unit ball if 1.0
 
 # ---- Control selection from U ----
 # True: apply only first n_joints entries (tau prefix)
 USE_TAU_PREFIX = True
+
+# ---- Save optional arrays ----
+SAVE_U_APPLIED = True      # if True, save U_applied_rollouts in output NPZ
+
+# ---- Visualization selection ----
+# Which rollout index to visualize (0..N_ROLLOUTS-1) if multi-rollout is used.
+VIS_ROLLOUT_IDX = 0
 
 # ============================================================
 
@@ -199,24 +214,24 @@ def build_h1_step_dynamics():
 # -----------------------------
 def rollout_with_model_dynamics(
     X0: np.ndarray,              # (nx,)
-    U: np.ndarray,               # (N, nu)
-    parameter: np.ndarray,       # (>=N+1, p_dim) or indexable by t
+    U: np.ndarray,               # (H, nu)
+    parameter: np.ndarray,       # (>=H+1, p_dim) or indexable by t
     n_joints: int,
     step_dynamics,               # jitted: (x,u,t,parameter)->x_next
     *,
     use_tau_prefix: bool = True,
 ) -> np.ndarray:
-    N = int(U.shape[0])
+    H = int(U.shape[0])
     nx = int(X0.shape[0])
 
     x = jnp.asarray(X0, dtype=jnp.float64)
     Uj = jnp.asarray(U, dtype=jnp.float64)
     Pj = jnp.asarray(parameter, dtype=jnp.float64)
 
-    xs = np.zeros((N + 1, nx), dtype=np.float64)
+    xs = np.zeros((H + 1, nx), dtype=np.float64)
     xs[0] = np.asarray(x, dtype=np.float64)
 
-    for t in range(N):
+    for t in range(H):
         u = Uj[t, :n_joints] if use_tau_prefix else Uj[t]
         x = step_dynamics(x, u, t, Pj)
         xs[t + 1] = np.asarray(x, dtype=np.float64)
@@ -225,23 +240,26 @@ def rollout_with_model_dynamics(
 
 
 # -----------------------------
-# SLS (Phi_u) feedback rollout utilities (UPDATED: sampled w, no inference)
+# Disturbance injection matrix E (your custom diag mapping)
 # -----------------------------
 def make_E_diag_rect(nx: int, n_w: int, scale: float = 0.05, first_k: int = 3) -> np.ndarray:
     """
-    Build E as (nx, n_w) with diagonal entries on the first min(first_k, nx, n_w).
+    Build E as (nx, n_w). Your current code uses a mostly-diagonal mapping and ignores n_w.
+    We'll keep that behavior but enforce shape (nx, n_w) when n_w == nx.
     """
-    # E = np.zeros((nx, nx), dtype=np.float64)
+    if n_w != nx:
+        raise ValueError(f"This script assumes n_w == nx. Got nx={nx}, n_w={n_w}.")
+
     E = np.diag(np.zeros(nx))
-    E[0,0] = 0.025
-    E[1,1] = 0.025
-    E[2,2] = 0.025
-    E[26,26] = 0.2
-    E[27,27] = 0.2
-    E[28,28] = 0.2
-    # k = int(min(first_k, nx, n_w))
-    # for i in range(k):
-    #     E[i, i] = float(scale)
+    # base position disturbance
+    E[0, 0] = 0.025
+    E[1, 1] = 0.025
+    E[2, 2] = 0.025
+    # some other dims (example indices you had)
+    if nx > 28:
+        E[26, 26] = 0.2
+        E[27, 27] = 0.2
+        E[28, 28] = 0.2
     return E
 
 
@@ -270,52 +288,129 @@ def sample_unit_ball_first3_into_nw(
 
     w = np.zeros((n_w,), dtype=np.float64)
     w[:3] = w3
-    w[0] = 0.6
-    w[1] = 0.7
-    w[2] = 0.00
+
+    # If you want fixed values (as you had), uncomment:
+    # w[0] = 0.6
+    # w[1] = 0.7
+    # w[2] = 0.0
     return w
 
 
-def sls_control_from_history_general(
-    u_nom_i: np.ndarray,      # (m,)
-    Phi_u_i: np.ndarray,      # (i+1, m, n_w)
-    w_hist: np.ndarray,       # (i+1, n_w)
+def make_predefined_W_bank(
+    *,
+    n_rollouts: int,
+    H: int,
+    n_w: int,
+    radius: float = 1.0,
+    base_seed: int = 0,
 ) -> np.ndarray:
-    u = u_nom_i.copy()
-    for j in range(Phi_u_i.shape[0]):
-        u += Phi_u_i[j] @ w_hist[j]
-    return u
+    """
+    Returns W_bank shape (n_rollouts, H, n_w).
+    Each rollout gets a deterministic sequence of w_i (first 3 dims in unit ball, rest 0),
+    using seed = base_seed + k.
+    """
+    W_bank = np.zeros((n_rollouts, H, n_w), dtype=np.float64)
+    # for k in range(n_rollouts):
+    #     rng = np.random.default_rng(int(base_seed) + k)
+    #     for i in range(H):
+    #         W_bank[k, i] = sample_unit_ball_first3_into_nw(rng, n_w=n_w, radius=float(radius))
+    w = np.array(np.zeros(n_w), dtype=np.float64)
+    w[26] = 1.0
+    w[1] = 0.0
+    W_seq = np.tile(w, (H, 1))   # shape (H, 3)
+    W_bank[0, :] = W_seq
+
+    w = np.array(np.zeros(n_w), dtype=np.float64)
+    w[26] = 0.707
+    w[27] = 0.707
+    w[1] = 0.0
+    W_seq = np.tile(w, (H, 1))   # shape (H, 3)
+    W_bank[1, :] = W_seq
 
 
-def rollout_with_model_dynamics_sls_feedback(
+    w = np.array(np.zeros(n_w), dtype=np.float64)
+    w[27] = 0.6
+    w[1] = 0.0
+    W_seq = np.tile(w, (H, 1))   # shape (H, 3)
+    W_bank[2, :] = W_seq
+
+    w = np.array(np.zeros(n_w), dtype=np.float64)
+    w[26] = 0.707
+    w[27] = -0.6
+    W_seq = np.tile(w, (H, 1))   # shape (H, 3)
+    W_bank[3, :] = W_seq
+
+    w = np.array(np.zeros(n_w), dtype=np.float64)
+    w[0] = 1.0
+    w[1] = 0.0
+    W_seq = np.tile(w, (H, 1))   # shape (H, 3)
+    W_bank[4, :] = W_seq
+
+    w = np.array(np.zeros(n_w), dtype=np.float64)
+    w[0] = -0.707
+    w[1] = -0.6
+    W_seq = np.tile(w, (H, 1))   # shape (H, 3)
+    W_bank[5, :] = W_seq
+
+    w = np.array(np.zeros(n_w), dtype=np.float64)
+    w[0] = -0.707
+    w[1] = 0.6
+    W_seq = np.tile(w, (H, 1))   # shape (H, 3)
+    W_bank[6, :] = W_seq
+
+    w = np.array(np.zeros(n_w), dtype=np.float64)
+    w[26] = -0.8
+    w[1] = 0.0
+    W_seq = np.tile(w, (H, 1))   # shape (H, 3)
+    W_bank[7, :] = W_seq
+
+    w = np.array(np.zeros(n_w), dtype=np.float64)
+    w[2] = -0.8
+    W_seq = np.tile(w, (H, 1))   # shape (H, 3)
+    W_bank[8, :] = W_seq
+
+    w = np.array(np.zeros(n_w), dtype=np.float64)
+    w[28] = 0.8
+    W_seq = np.tile(w, (H, 1))   # shape (H, 3)
+    W_bank[9, :] = W_seq
+
+    return W_bank
+
+
+# -----------------------------
+# Deterministic SLS feedback rollout with predefined W_seq
+# -----------------------------
+def rollout_with_model_dynamics_sls_feedback_predefW(
     X0: np.ndarray,               # (nx,) initial state
-    U: np.ndarray,                # (N, nu) nominal controls (tau prefix)
+    U: np.ndarray,                # (H, nu) nominal controls (tau prefix)
     Phi_u: np.ndarray,            # indexable Phi_u[i, j] -> (m, n_w)
-    parameter: np.ndarray,        # (>=N+1, p_dim)
+    parameter: np.ndarray,        # (>=H+1, p_dim)
     n_joints: int,
     step_dynamics,                # jitted
+    W_seq: np.ndarray,            # (H, n_w)
     *,
     use_tau_prefix: bool = True,
     E_scale: float = 0.05,
     E_first_k: int = 3,
-    w_seed: int = 0,
-    w_radius: float = 1.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Executed rollout:
+    Executed rollout with predefined disturbances:
+
       u_i = u_nom_i + sum_{j=0..i} Phi_u[i,j] @ w_j
       x_{i+1} = f(x_i, u_i, ...) + E @ w_i
 
-    w_i is sampled exogenously each step:
-      - uniform L2 ball in first 3 dims
-      - zeros in remaining dims
+    Conventions:
+      - w_0 is applied to x_1
+      - W_full has shape (H+1, n_w) with W_full[0]=0 and W_full[i+1]=w_i
+      - w_hist[j] corresponds to w_j with w_hist[0]=0, w_hist[i+1]=w_i
     """
     U = np.asarray(U, dtype=np.float64)
     Phi_u = np.asarray(Phi_u, dtype=np.float64)
     parameter = np.asarray(parameter, dtype=np.float64)
     X0 = np.asarray(X0, dtype=np.float64)
+    W_seq = np.asarray(W_seq, dtype=np.float64)
 
-    N = int(U.shape[0])
+    H = int(U.shape[0])
     nx = int(X0.shape[0])
 
     m = int(n_joints) if use_tau_prefix else int(U.shape[1])
@@ -323,48 +418,54 @@ def rollout_with_model_dynamics_sls_feedback(
     if Phi_u.ndim < 4:
         raise ValueError(f"Expected Phi_u to have >=4 dims, got shape={Phi_u.shape}")
 
+    # This script assumes n_w == nx (matches your earlier code)
     n_w = nx
+
+    if W_seq.shape != (H, n_w):
+        raise ValueError(f"W_seq must have shape (H, n_w)={(H, n_w)}, got {W_seq.shape}")
 
     # Disturbance injection matrix E (nx x n_w)
     E = make_E_diag_rect(nx=nx, n_w=n_w, scale=float(E_scale), first_k=int(E_first_k))
 
-    rng = np.random.default_rng(int(w_seed))
+    X_sim = np.zeros((H + 1, nx), dtype=np.float64)
+    U_applied = np.zeros((H, m), dtype=np.float64)
+    W_full = np.zeros((H + 1, n_w), dtype=np.float64)  # W_full[0]=0
 
-    X_sim = np.zeros((N + 1, nx), dtype=np.float64)
-    U_applied = np.zeros((N, m), dtype=np.float64)
-    W = np.zeros((N + 1, n_w), dtype=np.float64)  # W[0]=0
-    w_hist = np.zeros((N + 1, n_w), dtype=np.float64)
+    w_hist = np.zeros((H + 1, n_w), dtype=np.float64)
 
     x = jnp.asarray(X0, dtype=jnp.float64)
     Pj = jnp.asarray(parameter, dtype=jnp.float64)
     X_sim[0] = X0.copy()
 
-    for i in range(N):
+    for i in range(H):
         u_nom_i = U[i, :m] if use_tau_prefix else U[i].copy()
 
-        # Sample exogenous disturbance (first 3 dims only)
-        disturbance_feedback = np.zeros(U.shape[1])
-        for j in range(i + 1):
+        # feedback term: use known history w_0..w_{i-1} stored at w_hist[1..i]
+        disturbance_feedback = np.zeros((m,), dtype=np.float64)
+        for j in range(i + 1):  # j=0..i
+            # Phi_u[i, j] expected (m, n_w)
             disturbance_feedback += Phi_u[i, j] @ w_hist[j]
-        u0 = u_nom_i + disturbance_feedback
+
+        u_i = u_nom_i + disturbance_feedback
 
         # Step nominal model under applied control
-        u_jax = jnp.asarray(u0, dtype=jnp.float64)
+        u_jax = jnp.asarray(u_i, dtype=jnp.float64)
         x_next_nom = step_dynamics(x, u_jax, i, Pj)
         x_next_nom_np = np.asarray(x_next_nom, dtype=np.float64)
-        w_i = sample_unit_ball_first3_into_nw(rng, n_w=n_w, radius=float(w_radius))
 
-        # Save disturbance first so control can use it (w_hist includes w_i at index i)
-        W[i + 1] = w_i
+        # Apply predefined disturbance for this step
+        w_i = W_seq[i]
+        W_full[i + 1] = w_i
         w_hist[i + 1] = w_i
-        # Inject state disturbance using the *current* w_i
-        x_next = x_next_nom_np + E @ w_i * 0.05
 
-        U_applied[i] = u0
+        # Inject state disturbance
+        x_next = x_next_nom_np + (E @ w_i) * 0.05
+
+        U_applied[i] = u_i
         X_sim[i + 1] = x_next
         x = jnp.asarray(x_next, dtype=jnp.float64)
 
-    return X_sim, U_applied, W
+    return X_sim, U_applied, W_full
 
 
 # -----------------------------
@@ -442,22 +543,19 @@ def save_tube_replay(
     ax.set_title(title)
 
     if obstacles is not None and obstacles.size:
-        # for k in range(obstacles.shape[0]):
-        #     cx, cy, r = float(obstacles[k, 0]), float(obstacles[k, 1]), float(obstacles[k, 2])
-        #     ax.add_patch(plt.Circle((cx, cy), r - 0.3, alpha=0.30))
         for k in range(obstacles.shape[0]):
             cx, cy, r = float(obstacles[k, 0]), float(obstacles[k, 1]), float(obstacles[k, 2])
             ax.add_patch(
                 plt.Circle(
                     (cx, cy),
                     r,
-                    fill=False,                 # outline only
+                    fill=False,
                     edgecolor="red",
                     linestyle="--",
                     linewidth=2.0,
                     alpha=1.0,
                 )
-                )
+            )
 
     executed_line, = ax.plot([], [], lw=2, alpha=0.85, label="Executed (sim)")
     nominal_line,  = ax.plot([], [], lw=2, ls="--", alpha=0.90, label="Nominal", color="tab:blue")
@@ -467,7 +565,6 @@ def save_tube_replay(
     tube_patches: list[Rectangle] = []
     frame_text = ax.text(0.02, 0.98, "", transform=ax.transAxes, va="top", ha="left")
 
-    # ax.grid(True)
     ax.legend(loc="upper left", bbox_to_anchor=(0., 0.28), framealpha=0.9)
 
     def init():
@@ -507,7 +604,6 @@ def save_tube_replay(
 
         frame_text.set_text(f"Step {t}/{T-1}")
         return (executed_line, nominal_line, cur_pt, end_pt, frame_text, *tube_patches)
-
 
     ani = animation.FuncAnimation(
         fig, update, frames=T, init_func=init, blit=False, interval=interval_ms
@@ -557,11 +653,6 @@ def save_tube_vs_diff_grid(
     tube_plot = tube_sizes[:T, idx]
     diff_plot = diff[:T, idx]
 
-
-    A = np.random.randn(10, 10)
-    B = np.eye(5)
-    C = np.arange(20).reshape(4, 5)
-
     n_idx = idx.shape[0]
     nrows = int(math.ceil(n_idx / ncols))
     t = np.arange(T) * float(dt)
@@ -603,6 +694,7 @@ def save_tube_vs_diff_grid(
     fig.savefig(out_path, dpi=250, bbox_inches="tight")
     plt.close(fig)
 
+
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
@@ -626,7 +718,6 @@ def save_standalone_legend(out_path: str = "h1_legend.pdf", *,
     ax = fig.add_subplot(111)
     ax.axis("off")
 
-    # Put legend in the center and let it occupy the whole figure
     ax.legend(handles=handles,
               loc="center",
               ncol=ncol,
@@ -638,7 +729,6 @@ def save_standalone_legend(out_path: str = "h1_legend.pdf", *,
               handletextpad=0.8,
               borderpad=0.8)
 
-    # Save using the full figure (tight trims whitespace but keeps readable size)
     fig.savefig(out_path, dpi=dpi, bbox_inches="tight", pad_inches=0.2)
     plt.close(fig)
 
@@ -715,25 +805,75 @@ def main():
         print(f"[NUM] Truncated to H={H}: X{X.shape}, U{U.shape}, parameter{parameter.shape}, "
               f"Phi_x{getattr(Phi_x,'shape',None)}, Phi_u{None if Phi_u is None else Phi_u.shape}")
 
+    # Determine dims AFTER truncation
+    H = int(U.shape[0])
+    nx = int(X.shape[1])
+    n_w = nx
+    m = int(n_joints) if bool(USE_TAU_PREFIX) else int(U.shape[1])
+
     # -----------------------------
-    # Roll out executed trajectory
+    # Roll out executed trajectory / trajectories
     # -----------------------------
+    X_rollouts = None
+    U_applied_rollouts = None
+    W_rollouts = None
+
     if USE_SLS_FEEDBACK and (Phi_u is not None):
-        print("Rolling out with model dynamics + Phi_u feedback + SAMPLED disturbance (first 3 dims)...")
-        X_sim, U_applied, W = rollout_with_model_dynamics_sls_feedback(
-            X0=X[0],
-            U=U,
-            Phi_u=Phi_u,
-            parameter=parameter,
-            n_joints=n_joints,
-            step_dynamics=step_dynamics,
-            use_tau_prefix=bool(USE_TAU_PREFIX),
-            E_scale=float(E_SCALE),
-            E_first_k=int(E_FIRST_K),
-            w_seed=int(W_SEED),
-            w_radius=float(W_RADIUS),
-        )
-        print(f"SLS rollout complete: X_sim{X_sim.shape}, U_applied{U_applied.shape}, W{W.shape}")
+        print("Running multiple SLS rollouts with PREDEFINED disturbances...")
+
+        # Load or generate W_bank: (N_ROLLOUTS, H, n_w)
+        if W_PREDEF_PATH is not None:
+            W_bank = np.load(W_PREDEF_PATH).astype(np.float64)
+            if W_bank.shape != (int(N_ROLLOUTS), H, n_w):
+                raise ValueError(
+                    f"W_bank must have shape (N_ROLLOUTS, H, n_w)={(int(N_ROLLOUTS), H, n_w)}, got {W_bank.shape}"
+                )
+            print(f"Loaded W_bank from {W_PREDEF_PATH}: {W_bank.shape}")
+        else:
+            W_bank = make_predefined_W_bank(
+                n_rollouts=int(N_ROLLOUTS),
+                H=H,
+                n_w=n_w,
+                radius=float(W_RADIUS),
+                base_seed=int(W_SEED),
+            )
+            print(f"Generated W_bank deterministically: {W_bank.shape} (base_seed={W_SEED}, radius={W_RADIUS})")
+
+        X_rollouts = np.zeros((int(N_ROLLOUTS), H + 1, nx), dtype=np.float64)
+        W_rollouts = np.zeros((int(N_ROLLOUTS), H + 1, n_w), dtype=np.float64)
+
+        if bool(SAVE_U_APPLIED):
+            U_applied_rollouts = np.zeros((int(N_ROLLOUTS), H, m), dtype=np.float64)
+
+        for k in range(int(N_ROLLOUTS)):
+            X_sim_k, U_applied_k, W_full_k = rollout_with_model_dynamics_sls_feedback_predefW(
+                X0=X[0],
+                U=U,
+                Phi_u=Phi_u,
+                parameter=parameter,
+                n_joints=n_joints,
+                step_dynamics=step_dynamics,
+                W_seq=W_bank[k],
+                use_tau_prefix=bool(USE_TAU_PREFIX),
+                E_scale=float(E_SCALE),
+                E_first_k=int(E_FIRST_K),
+            )
+            X_rollouts[k] = X_sim_k
+            W_rollouts[k] = W_full_k
+            if bool(SAVE_U_APPLIED):
+                U_applied_rollouts[k] = U_applied_k
+
+        # Select one rollout for visualization
+        vis_k = int(VIS_ROLLOUT_IDX)
+        vis_k = max(0, min(vis_k, int(N_ROLLOUTS) - 1))
+        X_sim = X_rollouts[vis_k]
+
+        msg = f"Multi-rollout complete: X_rollouts{X_rollouts.shape}, W_rollouts{W_rollouts.shape}"
+        if bool(SAVE_U_APPLIED):
+            msg += f", U_applied_rollouts{U_applied_rollouts.shape}"
+        msg += f" | visualizing rollout {vis_k}"
+        print(msg)
+
     else:
         if USE_SLS_FEEDBACK and (Phi_u is None):
             print("NOTE: USE_SLS_FEEDBACK=True but NPZ has no Phi_u. Falling back to nominal rollout.")
@@ -764,14 +904,29 @@ def main():
     # FPS
     fps = None if int(FPS) <= 0 else int(FPS)
 
-    np.savez(
-        "data.npz",
+    # -----------------------------
+    # Save output NPZ (all rollouts if present)
+    # -----------------------------
+    save_dict = dict(
         X=X,
         tube_sizes=tube_sizes,
-        X_rollout=X_sim,
     )
 
-    # Save animation
+    if X_rollouts is not None:
+        save_dict["X_rollouts"] = X_rollouts
+        save_dict["W_rollouts"] = W_rollouts
+        if U_applied_rollouts is not None:
+            save_dict["U_applied_rollouts"] = U_applied_rollouts
+    else:
+        save_dict["X_rollout"] = X_sim
+
+    np.savez("data.npz", **save_dict)
+    print("Saved: data.npz")
+    print("Keys:", list(save_dict.keys()))
+
+    # -----------------------------
+    # Save animation (visualizing selected rollout or nominal fallback)
+    # -----------------------------
     os.makedirs(os.path.dirname(OUT_ANIM) or ".", exist_ok=True)
     print(f"Saving tube replay to: {OUT_ANIM}")
     save_tube_replay(
@@ -790,7 +945,9 @@ def main():
     )
     print(f"Saved replay animation to: {OUT_ANIM}")
 
-    # Optional: 6-per-row tube-vs-diff grid
+    # -----------------------------
+    # Optional: 6-per-row tube-vs-diff grid (uses selected rollout)
+    # -----------------------------
     if bool(TUBE_GRID):
         T = min(X_sim.shape[0], X.shape[0], tube_sizes.shape[0], 30)
         if T <= 2:
@@ -799,7 +956,6 @@ def main():
         diff_full = np.abs(X_sim[1:T] - X[1:T])  # (T-1, nx)
         tube_full = tube_sizes[1:T]              # (T-1, nx)
 
-        nx = int(X.shape[1])
         nq = 7 + int(n_joints)
         nv = 6 + int(n_joints)
 

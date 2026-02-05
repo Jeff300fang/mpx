@@ -17,6 +17,11 @@ THIS VERSION:
       (b) state disturbance injection: x_{t+1} = f(x_t,u_t,...) + E @ w_t
     where E is a diagonal-like mapping (nx x n_w) with nonzeros on the first E_FIRST_K diagonals.
 
+MODIFIED (minimal changes):
+  - Optionally overwrite the contact sequence parameter[t,:4] during rollout by inferring contact
+    from current foot-point heights (geom_xpos z) with hysteresis.
+  - This is done only in the replay/rollout script (does NOT change your MPC code).
+
 No argparse: configure via variables in the "USER CONFIG" block below.
 """
 
@@ -89,6 +94,23 @@ W_RADIUS = 1.0  # unit ball if 1.0
 # True: apply only first n_joints entries (tau prefix)
 USE_TAU_PREFIX = True
 
+# ---- Contact inference from current foot heights (NEW) ----
+# If True, during rollout we overwrite parameter[t,:4] using current geom_xpos z with hysteresis.
+INFER_CONTACT_FROM_HEIGHT = True
+
+# Hysteresis thresholds (meters):
+#   - turn ON contact when z < Z_ON
+#   - turn OFF contact when z > Z_OFF
+# (Z_OFF should be > Z_ON to avoid chatter)
+Z_ON = 0.015
+Z_OFF = 0.030
+
+# Tie the two points per foot together (recommended for your H1 4-point setup)
+TIE_POINTS_PER_FOOT = True
+
+# If True, initialize hysteresis state from stored parameter[0,:4]; else start from zeros.
+INIT_CONTACT_FROM_LOGGED = True
+
 # ============================================================
 
 
@@ -154,6 +176,50 @@ def extract_qpos_qvel(
 
 
 # -----------------------------
+# Contact inference helper (NEW)
+# -----------------------------
+def infer_contact_from_height_hysteresis(
+    model: mujoco.MjModel,
+    data: mujoco.MjData,
+    contact_geom_ids: list[int],
+    qpos: np.ndarray,
+    qvel: np.ndarray,
+    c_prev: np.ndarray,
+    *,
+    z_on: float,
+    z_off: float,
+    tie_points_per_foot: bool,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Infer 4 contact bits from current geom heights with hysteresis.
+
+    Returns:
+      c_new: (4,) float64 in {0,1}
+      z: (4,) float64 foot-point heights
+    """
+    data.qpos[:] = qpos
+    data.qvel[:] = qvel
+    mujoco.mj_forward(model, data)
+
+    z = np.zeros((4,), dtype=np.float64)
+    for i, gid in enumerate(contact_geom_ids):
+        z[i] = float(data.geom_xpos[gid, 2])
+
+    c = np.array(c_prev, dtype=np.float64, copy=True)
+
+    # hysteresis update
+    c[z < float(z_on)] = 1.0
+    c[z > float(z_off)] = 0.0
+
+    if tie_points_per_foot:
+        # Your verified mapping: (0,1) left foot, (2,3) right foot
+        c[1] = c[0]
+        c[3] = c[2]
+
+    return c, z
+
+
+# -----------------------------
 # Dynamics instantiation (matches MPC wrapper style)
 # -----------------------------
 def build_h1_step_dynamics():
@@ -191,20 +257,27 @@ def build_h1_step_dynamics():
     def step_dynamics(x, u, t, parameter):
         return dynamics(x, u, t, parameter=parameter)
 
-    return model, n_joints, dt, step_dynamics
+    return model, mjx_model, contact_id, n_joints, dt, step_dynamics
 
 
 # -----------------------------
-# Nominal rollout via model dynamics
+# Nominal rollout via model dynamics (MODIFIED: optional contact inference)
 # -----------------------------
 def rollout_with_model_dynamics(
     X0: np.ndarray,              # (nx,)
     U: np.ndarray,               # (N, nu)
     parameter: np.ndarray,       # (>=N+1, p_dim) or indexable by t
+    model: mujoco.MjModel,       # (NEW) for height-based contact inference
+    contact_id: list[int],       # (NEW) geom ids (len=4)
     n_joints: int,
     step_dynamics,               # jitted: (x,u,t,parameter)->x_next
     *,
     use_tau_prefix: bool = True,
+    infer_contact_from_height: bool = False,
+    z_on: float = 0.015,
+    z_off: float = 0.030,
+    tie_points_per_foot: bool = True,
+    init_contact_from_logged: bool = True,
 ) -> np.ndarray:
     N = int(U.shape[0])
     nx = int(X0.shape[0])
@@ -213,11 +286,44 @@ def rollout_with_model_dynamics(
     Uj = jnp.asarray(U, dtype=jnp.float64)
     Pj = jnp.asarray(parameter, dtype=jnp.float64)
 
+    # CPU MuJoCo data for contact inference (if enabled)
+    mj_data = mujoco.MjData(model) if infer_contact_from_height else None
+
+    # Hysteresis state
+    if infer_contact_from_height:
+        if init_contact_from_logged and parameter.shape[0] > 0 and parameter.shape[1] >= 4:
+            c_prev = np.array(parameter[0, :4], dtype=np.float64)
+        else:
+            c_prev = np.zeros((4,), dtype=np.float64)
+
     xs = np.zeros((N + 1, nx), dtype=np.float64)
     xs[0] = np.asarray(x, dtype=np.float64)
 
     for t in range(N):
         u = Uj[t, :n_joints] if use_tau_prefix else Uj[t]
+
+        if infer_contact_from_height:
+            # Infer contact from current state x (CPU forward kinematics)
+            x_np = np.asarray(x, dtype=np.float64)
+            qpos = x_np[: n_joints + 7]
+            qvel = x_np[n_joints + 7 : 2 * n_joints + 13]
+
+            c_new, _z = infer_contact_from_height_hysteresis(
+                model=model,
+                data=mj_data,
+                contact_geom_ids=contact_id,
+                qpos=qpos,
+                qvel=qvel,
+                c_prev=c_prev,
+                z_on=float(z_on),
+                z_off=float(z_off),
+                tie_points_per_foot=bool(tie_points_per_foot),
+            )
+            c_prev = c_new
+
+            # Overwrite parameter[t,:4] on-device
+            Pj = Pj.at[t, :4].set(jnp.asarray(c_new, dtype=jnp.float64))
+
         x = step_dynamics(x, u, t, Pj)
         xs[t + 1] = np.asarray(x, dtype=np.float64)
 
@@ -226,22 +332,15 @@ def rollout_with_model_dynamics(
 
 # -----------------------------
 # SLS (Phi_u) feedback rollout utilities (UPDATED: sampled w, no inference)
+# MODIFIED: optional contact inference same as above
 # -----------------------------
 def make_E_diag_rect(nx: int, n_w: int, scale: float = 0.05, first_k: int = 3) -> np.ndarray:
     """
     Build E as (nx, n_w) with diagonal entries on the first min(first_k, nx, n_w).
     """
-    # E = np.zeros((nx, nx), dtype=np.float64)
     E = np.diag(np.zeros(nx))
-    E[0,0] = 0.025
-    E[1,1] = 0.025
-    E[2,2] = 0.025
-    E[26,26] = 0.2
-    E[27,27] = 0.2
-    E[28,28] = 0.2
-    # k = int(min(first_k, nx, n_w))
-    # for i in range(k):
-    #     E[i, i] = float(scale)
+    E[0:3] = 0.025
+    E[26:29] = 0.2
     return E
 
 
@@ -270,21 +369,10 @@ def sample_unit_ball_first3_into_nw(
 
     w = np.zeros((n_w,), dtype=np.float64)
     w[:3] = w3
-    w[0] = 0.6
-    w[1] = 0.7
+    w[0] = 0.05
+    w[1] = 0.05
     w[2] = 0.00
     return w
-
-
-def sls_control_from_history_general(
-    u_nom_i: np.ndarray,      # (m,)
-    Phi_u_i: np.ndarray,      # (i+1, m, n_w)
-    w_hist: np.ndarray,       # (i+1, n_w)
-) -> np.ndarray:
-    u = u_nom_i.copy()
-    for j in range(Phi_u_i.shape[0]):
-        u += Phi_u_i[j] @ w_hist[j]
-    return u
 
 
 def rollout_with_model_dynamics_sls_feedback(
@@ -292,6 +380,8 @@ def rollout_with_model_dynamics_sls_feedback(
     U: np.ndarray,                # (N, nu) nominal controls (tau prefix)
     Phi_u: np.ndarray,            # indexable Phi_u[i, j] -> (m, n_w)
     parameter: np.ndarray,        # (>=N+1, p_dim)
+    model: mujoco.MjModel,        # (NEW) for height-based contact inference
+    contact_id: list[int],        # (NEW) geom ids (len=4)
     n_joints: int,
     step_dynamics,                # jitted
     *,
@@ -300,6 +390,11 @@ def rollout_with_model_dynamics_sls_feedback(
     E_first_k: int = 3,
     w_seed: int = 0,
     w_radius: float = 1.0,
+    infer_contact_from_height: bool = False,
+    z_on: float = 0.015,
+    z_off: float = 0.030,
+    tie_points_per_foot: bool = True,
+    init_contact_from_logged: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Executed rollout:
@@ -309,6 +404,8 @@ def rollout_with_model_dynamics_sls_feedback(
     w_i is sampled exogenously each step:
       - uniform L2 ball in first 3 dims
       - zeros in remaining dims
+
+    If infer_contact_from_height=True, overwrites parameter[i,:4] from current foot heights.
     """
     U = np.asarray(U, dtype=np.float64)
     Phi_u = np.asarray(Phi_u, dtype=np.float64)
@@ -325,9 +422,7 @@ def rollout_with_model_dynamics_sls_feedback(
 
     n_w = nx
 
-    # Disturbance injection matrix E (nx x n_w)
     E = make_E_diag_rect(nx=nx, n_w=n_w, scale=float(E_scale), first_k=int(E_first_k))
-
     rng = np.random.default_rng(int(w_seed))
 
     X_sim = np.zeros((N + 1, nx), dtype=np.float64)
@@ -337,13 +432,41 @@ def rollout_with_model_dynamics_sls_feedback(
 
     x = jnp.asarray(X0, dtype=jnp.float64)
     Pj = jnp.asarray(parameter, dtype=jnp.float64)
+
+    mj_data = mujoco.MjData(model) if infer_contact_from_height else None
+
+    if infer_contact_from_height:
+        if init_contact_from_logged and parameter.shape[0] > 0 and parameter.shape[1] >= 4:
+            c_prev = np.array(parameter[0, :4], dtype=np.float64)
+        else:
+            c_prev = np.zeros((4,), dtype=np.float64)
+
     X_sim[0] = X0.copy()
 
     for i in range(N):
         u_nom_i = U[i, :m] if use_tau_prefix else U[i].copy()
 
-        # Sample exogenous disturbance (first 3 dims only)
-        disturbance_feedback = np.zeros(U.shape[1])
+        if infer_contact_from_height:
+            x_np = np.asarray(x, dtype=np.float64)
+            qpos = x_np[: n_joints + 7]
+            qvel = x_np[n_joints + 7 : 2 * n_joints + 13]
+
+            c_new, _z = infer_contact_from_height_hysteresis(
+                model=model,
+                data=mj_data,
+                contact_geom_ids=contact_id,
+                qpos=qpos,
+                qvel=qvel,
+                c_prev=c_prev,
+                z_on=float(z_on),
+                z_off=float(z_off),
+                tie_points_per_foot=bool(tie_points_per_foot),
+            )
+            c_prev = c_new
+            Pj = Pj.at[i, :4].set(jnp.asarray(c_new, dtype=jnp.float64))
+
+        # SLS feedback term from history
+        disturbance_feedback = np.zeros(U.shape[1], dtype=np.float64)
         for j in range(i + 1):
             disturbance_feedback += Phi_u[i, j] @ w_hist[j]
         u0 = u_nom_i + disturbance_feedback
@@ -352,12 +475,12 @@ def rollout_with_model_dynamics_sls_feedback(
         u_jax = jnp.asarray(u0, dtype=jnp.float64)
         x_next_nom = step_dynamics(x, u_jax, i, Pj)
         x_next_nom_np = np.asarray(x_next_nom, dtype=np.float64)
+
         w_i = sample_unit_ball_first3_into_nw(rng, n_w=n_w, radius=float(w_radius))
 
-        # Save disturbance first so control can use it (w_hist includes w_i at index i)
         W[i + 1] = w_i
         w_hist[i + 1] = w_i
-        # Inject state disturbance using the *current* w_i
+
         x_next = x_next_nom_np + E @ w_i * 0.05
 
         U_applied[i] = u0
@@ -442,22 +565,19 @@ def save_tube_replay(
     ax.set_title(title)
 
     if obstacles is not None and obstacles.size:
-        # for k in range(obstacles.shape[0]):
-        #     cx, cy, r = float(obstacles[k, 0]), float(obstacles[k, 1]), float(obstacles[k, 2])
-        #     ax.add_patch(plt.Circle((cx, cy), r - 0.3, alpha=0.30))
         for k in range(obstacles.shape[0]):
             cx, cy, r = float(obstacles[k, 0]), float(obstacles[k, 1]), float(obstacles[k, 2])
             ax.add_patch(
                 plt.Circle(
                     (cx, cy),
                     r,
-                    fill=False,                 # outline only
+                    fill=False,
                     edgecolor="red",
                     linestyle="--",
                     linewidth=2.0,
                     alpha=1.0,
                 )
-                )
+            )
 
     executed_line, = ax.plot([], [], lw=2, alpha=0.85, label="Executed (sim)")
     nominal_line,  = ax.plot([], [], lw=2, ls="--", alpha=0.90, label="Nominal", color="tab:blue")
@@ -467,7 +587,6 @@ def save_tube_replay(
     tube_patches: list[Rectangle] = []
     frame_text = ax.text(0.02, 0.98, "", transform=ax.transAxes, va="top", ha="left")
 
-    # ax.grid(True)
     ax.legend(loc="upper left", bbox_to_anchor=(0., 0.28), framealpha=0.9)
 
     def init():
@@ -507,7 +626,6 @@ def save_tube_replay(
 
         frame_text.set_text(f"Step {t}/{T-1}")
         return (executed_line, nominal_line, cur_pt, end_pt, frame_text, *tube_patches)
-
 
     ani = animation.FuncAnimation(
         fig, update, frames=T, init_func=init, blit=False, interval=interval_ms
@@ -557,11 +675,6 @@ def save_tube_vs_diff_grid(
     tube_plot = tube_sizes[:T, idx]
     diff_plot = diff[:T, idx]
 
-
-    A = np.random.randn(10, 10)
-    B = np.eye(5)
-    C = np.arange(20).reshape(4, 5)
-
     n_idx = idx.shape[0]
     nrows = int(math.ceil(n_idx / ncols))
     t = np.arange(T) * float(dt)
@@ -603,6 +716,7 @@ def save_tube_vs_diff_grid(
     fig.savefig(out_path, dpi=250, bbox_inches="tight")
     plt.close(fig)
 
+
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
@@ -626,7 +740,6 @@ def save_standalone_legend(out_path: str = "h1_legend.pdf", *,
     ax = fig.add_subplot(111)
     ax.axis("off")
 
-    # Put legend in the center and let it occupy the whole figure
     ax.legend(handles=handles,
               loc="center",
               ncol=ncol,
@@ -638,7 +751,6 @@ def save_standalone_legend(out_path: str = "h1_legend.pdf", *,
               handletextpad=0.8,
               borderpad=0.8)
 
-    # Save using the full figure (tight trims whitespace but keeps readable size)
     fig.savefig(out_path, dpi=dpi, bbox_inches="tight", pad_inches=0.2)
     plt.close(fig)
 
@@ -668,7 +780,7 @@ def main():
             "Tube visualization requires 'Phi_x' in the NPZ.\n"
             "Save Phi_x during rollout generation."
         )
-    Phi_x = data_npz["Phi_x"]  # can be memmap-like
+    Phi_x = data_npz["Phi_x"]
 
     Phi_u = None
     if "Phi_u" in data_npz.files:
@@ -679,7 +791,7 @@ def main():
         obstacles = np.asarray(data_npz["obstacles"], dtype=np.float64)
 
     # Build dynamics (also gives n_joints, dt)
-    model, n_joints, dt, step_dynamics = build_h1_step_dynamics()
+    model, mjx_model, contact_id, n_joints, dt, step_dynamics = build_h1_step_dynamics()
 
     print(f"Loaded NPZ: {NPZ_PATH}")
     print(f"Arrays: {list(data_npz.files)}")
@@ -691,6 +803,7 @@ def main():
     print(f"Using config.model_path: {config.model_path}")
     print(f"model.nq={model.nq}, model.nv={model.nv}, model.nu={model.nu}")
     print(f"n_joints={n_joints}, dt={dt}")
+    print(f"INFER_CONTACT_FROM_HEIGHT={INFER_CONTACT_FROM_HEIGHT} (Z_ON={Z_ON}, Z_OFF={Z_OFF})")
 
     # -----------------------------
     # Horizon truncation via NUM
@@ -702,11 +815,9 @@ def main():
         U = U[: H]
         parameter = parameter[: H + 1]
 
-        # Phi_x required for tubes; keep first H steps along time axis if possible
         if hasattr(Phi_x, "shape") and Phi_x.shape[0] >= H:
             Phi_x = Phi_x[:H]
 
-        # Phi_u optional; keep first H along i-axis, and clamp history axis to <= H+1
         if Phi_u is not None:
             Phi_u = Phi_u[:H]
             if Phi_u.ndim >= 2:
@@ -725,6 +836,8 @@ def main():
             U=U,
             Phi_u=Phi_u,
             parameter=parameter,
+            model=model,
+            contact_id=contact_id,
             n_joints=n_joints,
             step_dynamics=step_dynamics,
             use_tau_prefix=bool(USE_TAU_PREFIX),
@@ -732,6 +845,11 @@ def main():
             E_first_k=int(E_FIRST_K),
             w_seed=int(W_SEED),
             w_radius=float(W_RADIUS),
+            infer_contact_from_height=bool(INFER_CONTACT_FROM_HEIGHT),
+            z_on=float(Z_ON),
+            z_off=float(Z_OFF),
+            tie_points_per_foot=bool(TIE_POINTS_PER_FOOT),
+            init_contact_from_logged=bool(INIT_CONTACT_FROM_LOGGED),
         )
         print(f"SLS rollout complete: X_sim{X_sim.shape}, U_applied{U_applied.shape}, W{W.shape}")
     else:
@@ -742,9 +860,16 @@ def main():
             X0=X[0],
             U=U,
             parameter=parameter,
+            model=model,
+            contact_id=contact_id,
             n_joints=n_joints,
             step_dynamics=step_dynamics,
             use_tau_prefix=bool(USE_TAU_PREFIX),
+            infer_contact_from_height=bool(INFER_CONTACT_FROM_HEIGHT),
+            z_on=float(Z_ON),
+            z_off=float(Z_OFF),
+            tie_points_per_foot=bool(TIE_POINTS_PER_FOOT),
+            init_contact_from_logged=bool(INIT_CONTACT_FROM_LOGGED),
         )
         print(f"Nominal rollout complete: X_sim{X_sim.shape}")
 

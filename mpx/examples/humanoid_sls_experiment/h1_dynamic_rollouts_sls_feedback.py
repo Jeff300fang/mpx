@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 render_h1_rollout_via_model_dynamics.py
 
@@ -5,41 +6,19 @@ Render a saved H1 rollout NPZ by *re-simulating* it using the SAME dynamics
 function used inside MPC, then visualizing the resulting states in an
 interactive MuJoCo viewer.
 
-This version optionally includes SLS disturbance-feedback via Phi_u:
+UPDATED BEHAVIOR (per your request):
+  - NO disturbance inference from mismatch. The old "infer w" path is removed.
+  - If --use-sls-feedback and Phi_u present:
+        u_i = u_nom_i + sum_{j=0..i} Phi_u[i,j] @ w_hist[j]
+    where w_j is SAMPLED (uniform L2 ball) in the FIRST 3 dims only; rest = 0.
+  - And the state is advanced with a disturbed step:
+        x_{i+1} = f(x_i, u_i, i, parameter) + E @ w_i
+    with E = diag([E_scale]*E_first_k, 0, 0, ...) (nx x nx).
+  - If not using SLS feedback, it performs nominal rollout (no disturbance).
 
-  u_i = u_nom_i + sum_{j=0..i} Phi_u[i,j] @ w_hist[j]
-
-and infers w_{i+1} from mismatch between stored X[i+1] ("actual") and model
-prediction x_next_nom via:
-
-  E w = (x_next_act - x_next_nom)
-
-with E = diag([0.05, 0.05, 0, 0, ...]) by default.
-
-Workflow:
-  - Load X, U, parameter (and optionally Phi_u, obstacles) from NPZ
-  - Build dynamics = partial(config.dynamics, model, mjx_model, contact_id, body_id, n_joints, dt)
-  - Rollout:
-      if Phi_u present:
-         apply u_i = U_tau[i] + Phi_u-feedback from inferred w history
-         simulate x_next_nom = step_dynamics(x_i, u_i, i, parameter)
-         infer w_{i+1} using E and (X[i+1] - x_next_nom)
-      else:
-         simulate using nominal U_tau only
-  - Render x_sim[t] in mujoco.viewer (write qpos/qvel into data, mj_forward, sync)
-
-Assumptions:
-  - config_h1 provides: model_path, n_joints, dt, contact_frame, body_name, dynamics(...)
-  - NPZ contains:
-      X: (N+1, nx)
-      U: (N, nu)
-      parameter: (>=N+1, p_dim) or at least indexable by t used in dynamics
-    Optional:
-      Phi_u: (N, N+1, m, n_w) or (N, N, m, n_w) (must be indexable Phi_u[i,j] -> (m,n_w))
-      obstacles: (n_obs, 3) as [cx, cy, r] for overlay
-
-Run:
-  python render_h1_rollout_via_model_dynamics.py --npz mpc_data/h1_mpc_rollout.npz --show-ground --show-obstacles
+Notes:
+  - We keep argparse as in your file.
+  - The disturbance is injected additively *after* the dynamics step.
 """
 
 from __future__ import annotations
@@ -60,6 +39,7 @@ import jax
 import jax.numpy as jnp
 from functools import partial
 
+
 import mpx.config.config_h1 as config
 
 
@@ -78,18 +58,6 @@ def align_quat_sign(q: np.ndarray, q_ref: np.ndarray) -> np.ndarray:
     q = np.asarray(q, dtype=np.float64)
     q_ref = np.asarray(q_ref, dtype=np.float64)
     return -q if float(np.dot(q, q_ref)) < 0.0 else q
-
-
-def infer_disturbance(E_i: np.ndarray,
-                      x_next_act: np.ndarray,
-                      x_next_nom: np.ndarray) -> np.ndarray:
-    """
-    Solve E_i w = (x_next_act - x_next_nom) in least-squares sense.
-    E_i: (n, n_w) or (n, n) in your setup.
-    """
-    rhs = np.asarray(x_next_act, dtype=np.float64) - np.asarray(x_next_nom, dtype=np.float64)
-    w_i, *_ = np.linalg.lstsq(E_i, rhs, rcond=None)
-    return w_i
 
 
 # -----------------------------
@@ -236,18 +204,44 @@ def build_h1_step_dynamics():
 
 
 # -----------------------------
-# SLS feedback helpers
+# Disturbance + SLS helpers
 # -----------------------------
 def make_E_diag(nx: int, scale: float = 0.05, first_k: int = 2) -> np.ndarray:
     """
     E is (nx, nx) diagonal, with 'scale' on first_k diagonals, zeros elsewhere.
-    Example: first_k=2 -> diag([0.05, 0.05, 0, 0, ...]).
     """
     E = np.zeros((nx, nx), dtype=np.float64)
     k = int(min(first_k, nx))
     for i in range(k):
         E[i, i] = float(scale)
     return E
+
+
+def sample_unit_ball_first3(rng: np.random.Generator, n_w: int, radius: float = 1.0) -> np.ndarray:
+    """
+    w in R^{n_w}:
+      - w[0:3] ~ Uniform L2 ball radius 'radius'
+      - w[3:] = 0
+    """
+    if n_w < 3:
+        raise ValueError(f"n_w must be >= 3, got {n_w}")
+
+    v = rng.normal(size=(3,))
+    n = np.linalg.norm(v)
+    if n < 1e-12:
+        v = np.array([1.0, 0.0, 0.0])
+        n = 1.0
+    v = v / n
+
+    r = float(radius) * (rng.random() ** (1.0 / 3.0))
+    w3 = r * v
+
+    w = np.zeros((n_w,), dtype=np.float64)
+    w[:3] = w3
+    w[0] = 0.6
+    w[1] = 0.7
+    w[2] = 0
+    return w
 
 
 def sls_control_from_history_general(
@@ -262,6 +256,28 @@ def sls_control_from_history_general(
     for j in range(Phi_u_i.shape[0]):
         u += Phi_u_i[j] @ w_hist[j]
     return u
+
+
+def step_dynamics_with_disturbance(
+    step_dynamics,            # jitted: (x,u,t,parameter)->x_nom_next (jax array)
+    x: np.ndarray,            # (nx,)
+    u: np.ndarray,            # (m,)
+    t: int,
+    parameter,                # array-like
+    E: np.ndarray,            # (nx, nx) or (nx, n_w)
+    w_t: np.ndarray,          # (n_w,) (or (nx,) if E is square and you pass nx)
+) -> np.ndarray:
+    """
+    x_next = f(x,u,t,parameter) + E @ w_t
+    """
+    x_nom = step_dynamics(
+        jnp.asarray(x, dtype=jnp.float64),
+        jnp.asarray(u, dtype=jnp.float64),
+        int(t),
+        jnp.asarray(parameter, dtype=jnp.float64),
+    )
+    x_nom = np.asarray(x_nom, dtype=np.float64)
+    return x_nom + np.asarray(E, dtype=np.float64) @ np.asarray(w_t, dtype=np.float64) * 0.05
 
 
 # -----------------------------
@@ -295,96 +311,79 @@ def rollout_with_model_dynamics(
 
 
 # -----------------------------
-# Rollout via model dynamics + SLS Phi_u feedback
+# Rollout via model dynamics + SLS Phi_u feedback + disturbed steps
 # -----------------------------
-def rollout_with_model_dynamics_sls_feedback(
-    X: np.ndarray,                # (N+1, nx) stored rollout used as "actual" for disturbance inference
-    U: np.ndarray,                # (N, nu) nominal controls (tau prefix)
-    Phi_u: np.ndarray,            # must be indexable Phi_u[i,j] -> (m, n_w)
-    parameter: np.ndarray,        # (>=N+1, p_dim)
+def rollout_with_model_dynamics_sls_feedback_disturbed(
+    X0: np.ndarray,                # (nx,)
+    U: np.ndarray,                 # (N, nu) nominal controls (tau prefix)
+    Phi_u: np.ndarray,             # Phi_u[i,j] -> (m,n_w)
+    parameter: np.ndarray,         # (>=N+1, p_dim)
     n_joints: int,
-    step_dynamics,                # jitted
+    step_dynamics,                 # jitted
     *,
     use_tau_prefix: bool = True,
     E_scale: float = 0.05,
-    E_first_k: int = 3,
+    E_first_k: int = 2,
+    w_radius: float = 1.0,
+    w_seed: int = 0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Returns:
-      X_sim: (N+1, nx) simulated states (starting from X[0])
+      X_sim: (N+1, nx) simulated states
       U_applied: (N, m) applied controls (nominal + feedback)
-      W: (N+1, n_w) inferred disturbances, with W[0]=0
+      W: (N+1, n_w) sampled disturbances, with W[0]=0
     """
-    X = np.asarray(X, dtype=np.float64)
     U = np.asarray(U, dtype=np.float64)
     Phi_u = np.asarray(Phi_u, dtype=np.float64)
     parameter = np.asarray(parameter, dtype=np.float64)
-    MAX_STEPS = 25  # controls / iterations
-    H = max(1, min(MAX_STEPS, U.shape[0], X.shape[0] - 1))
-    if Phi_u is not None:
-        Phi_u = Phi_u[:H]
-        Phi_u = Phi_u[:, : min(Phi_u.shape[1], H + 1)]
-
-    X = X[: H + 1]
-    U = U[: H]
-    parameter = parameter[: H + 1]
+    X0 = np.asarray(X0, dtype=np.float64)
 
     N = int(U.shape[0])
-    nx = int(X.shape[1])
+    nx = int(X0.shape[0])
 
     m = int(n_joints) if use_tau_prefix else int(U.shape[1])
-
     if Phi_u.ndim < 4:
         raise ValueError(f"Expected Phi_u to have >=4 dims, got shape={Phi_u.shape}")
-
     n_w = int(Phi_u.shape[-1])
 
-    E = make_E_diag(nx=nx, scale=E_scale, first_k=E_first_k)  # (nx, nx)
+    # State disturbance mapping (nx x nx); only first_k diagonals nonzero.
+    # We'll still pass w_t as length nx by embedding n_w into nx if needed.
+    E = make_E_diag(nx=nx, scale=float(E_scale), first_k=int(E_first_k))  # (nx, nx)
+
+    rng = np.random.default_rng(int(w_seed))
 
     X_sim = np.zeros((N + 1, nx), dtype=np.float64)
     U_applied = np.zeros((N, m), dtype=np.float64)
     W = np.zeros((N + 1, n_w), dtype=np.float64)  # W[0]=0
-
+    N = 30
     w_hist = np.zeros((N + 1, n_w), dtype=np.float64)
 
-    x = jnp.asarray(X[0], dtype=jnp.float64)
-    Pj = jnp.asarray(parameter, dtype=jnp.float64)
+    x = X0.copy()
+    X_sim[0] = x
 
-    X_sim[0] = X[0].copy()
-
-    for i in range(MAX_STEPS):
-        # Nominal control (tau prefix)
+    for i in range(N):
         u_nom_i = U[i, :m] if use_tau_prefix else U[i].copy()
 
-        # Phi_u slice: (i+1, m, n_w) for j=0..i
-        Phi_u_i = Phi_u[i, : i + 1]
-
-        # Applied control
-        u_i = sls_control_from_history_general(u_nom_i, Phi_u_i, w_hist[: i + 1])
-
-        # Model step
-        u_jax = jnp.asarray(u_i, dtype=jnp.float64)
-        x_next_nom = step_dynamics(x, u_jax, i, Pj)
-        x_next_nom_np = np.asarray(x_next_nom, dtype=np.float64)
-
-        # Infer disturbance from mismatch to stored rollout
-        x_next_act = X[i + 1]
-        w_full = infer_disturbance(E, x_next_act, x_next_nom_np)  # (nx,)
-
-        # Map to n_w if needed
-        if w_full.shape[0] == n_w:
-            w_i = np.asarray(w_full, dtype=np.float64)
-        else:
-            w_i = np.asarray(w_full[:n_w], dtype=np.float64)
-
-        # Save
-        U_applied[i] = u_i
+        # Sample w_i (first 3 dims only)
+        w_i = sample_unit_ball_first3(rng, n_w=n_w, radius=float(w_radius))
         W[i + 1] = w_i
         w_hist[i + 1] = w_i
 
-        # Advance simulated state
-        X_sim[i + 1] = x_next_nom_np
-        x = x_next_nom
+        # Control uses history w_0..w_i:
+        # Phi_u[i,j] multiplies w_j, and w_j is stored in w_hist[j+1].
+        Phi_u_i = Phi_u[i, : i + 1]      # (i+1, m, n_w)
+        w_used = w_hist[1 : i + 2]       # (i+1, n_w) corresponds to w_0..w_i
+        u_i = sls_control_from_history_general(u_nom_i, Phi_u_i, w_used)
+
+        # Disturbed state step uses current w_i.
+        # E is (nx,nx) so embed w_i into an nx vector (first n_w entries).
+        w_embed = np.zeros((nx,), dtype=np.float64)
+        w_embed[: min(n_w, nx)] = w_i[: min(n_w, nx)]
+        x_next = step_dynamics_with_disturbance(step_dynamics, x, u_i, i, parameter, E, w_embed)
+
+        U_applied[i] = u_i
+        X_sim[i + 1] = x_next
+        x = x_next
 
     return X_sim, U_applied, W
 
@@ -420,9 +419,6 @@ def run_viewer_model_rollout(
     U = np.asarray(data_npz["U"])
     parameter = np.asarray(data_npz["parameter"])
 
-    N = int(U.shape[0])
-    nx = int(X.shape[1])
-
     # Build dynamics + MuJoCo model (model is used for rendering too)
     model, n_joints, dt, step_dynamics = build_h1_step_dynamics()
 
@@ -449,9 +445,10 @@ def run_viewer_model_rollout(
 
     # Re-simulate
     if use_sls_feedback and (Phi_u is not None):
-        print("Rolling out with model dynamics + SLS Phi_u disturbance feedback...")
-        X_sim, U_applied, W = rollout_with_model_dynamics_sls_feedback(
-            X=X,
+        print("Rolling out with model dynamics + Phi_u feedback + DISTURBED STEPS...")
+        # Use the stored initial state, but DO NOT infer w; we sample it inside.
+        X_sim, U_applied, W = rollout_with_model_dynamics_sls_feedback_disturbed(
+            X0=X[0],
             U=U,
             Phi_u=Phi_u,
             parameter=parameter,
@@ -460,6 +457,8 @@ def run_viewer_model_rollout(
             use_tau_prefix=True,
             E_scale=float(E_scale),
             E_first_k=int(E_first_k),
+            w_radius=1.0,
+            w_seed=0,
         )
         print(f"Sim rollout complete: X_sim shape={X_sim.shape}, U_applied shape={U_applied.shape}, W shape={W.shape}")
     else:
@@ -476,11 +475,6 @@ def run_viewer_model_rollout(
         )
         print(f"Sim rollout complete: X_sim shape={X_sim.shape}")
 
-    # Optional quick one-step consistency check vs stored X
-    if X.shape[0] >= 2:
-        err0 = np.linalg.norm(X_sim[1, :min(nx, X.shape[1])] - X[1, :min(nx, X.shape[1])])
-        print(f"Sanity: ||X_sim[1]-X_stored[1]|| = {err0:.6e} (first min(nx) dims)")
-
     # Rendering uses its own MjData
     render_data = mujoco.MjData(model)
 
@@ -489,45 +483,24 @@ def run_viewer_model_rollout(
     i = max(0, min(int(start_index), T - 1))
 
     print("Close the viewer window to exit.")
-    counter = 0
     with mujoco.viewer.launch_passive(model, render_data) as viewer:
         while viewer.is_running():
-            # Reset per-frame overlay geoms
             clear_user_geoms(viewer)
 
-            # --- Ground plane ---
             if show_ground:
-                add_ground_plane(
-                    viewer,
-                    z=0.0,
-                    size_xy=50.0,
-                    rgba=(0.7, 0.7, 0.7, 1.0),
-                )
+                add_ground_plane(viewer, z=0.0, size_xy=50.0, rgba=(0.7, 0.7, 0.7, 1.0))
 
-            # --- Obstacles ---
-            if show_obstacles:
-                if obs is not None:
-                    for k in range(obs.shape[0]):
-                        add_cylinder_pillar(
-                            viewer,
-                            pos_xyz=np.array([obs[k, 0], obs[k, 1], 0.0]),
-                            radius=float(obs[k, 2]),
-                            height=float(obstacle_height),
-                        )
-                else:
-                    # only print once every loop wrap to avoid spam
-                    pass
+            if show_obstacles and (obs is not None):
+                for k in range(obs.shape[0]):
+                    add_cylinder_pillar(
+                        viewer,
+                        pos_xyz=np.array([obs[k, 0], obs[k, 1], 0.0]),
+                        radius=float(obs[k, 2] - 0.3),
+                        height=float(obstacle_height),
+                    )
 
-            # Render simulated state at i
-            qpos, qvel = extract_qpos_qvel(
-                X_sim[i], model=model, n_joints=n_joints, layout=layout
-            )
+            qpos, qvel = extract_qpos_qvel(X_sim[i], model=model, n_joints=n_joints, layout=layout)
 
-            # Optional counter for debugging
-            # print(counter)
-            counter += 1
-
-            # Normalize / smooth base quaternion
             if qpos.shape[0] >= 7:
                 q = normalize_quat(qpos[3:7])
                 if quat_sign_smoothing and (prev_quat is not None):
@@ -535,7 +508,6 @@ def run_viewer_model_rollout(
                 qpos[3:7] = q
                 prev_quat = q.copy()
 
-            # Write into MuJoCo buffers
             nq_write = min(qpos.shape[0], render_data.qpos.shape[0])
             nv_write = min(qvel.shape[0], render_data.qvel.shape[0])
             render_data.qpos[:nq_write] = qpos[:nq_write]
@@ -544,17 +516,14 @@ def run_viewer_model_rollout(
             mujoco.mj_forward(model, render_data)
             viewer.sync()
 
-            # Advance
             i_next = i + int(stride)
             if i_next >= T:
                 i_next = 0
-                counter = 0
                 prev_quat = None
             i = i_next
 
             if realtime:
                 time.sleep(float(dt) * float(stride))
-                # time.sleep(0.3)
 
 
 def parse_args():
@@ -580,12 +549,7 @@ def parse_args():
         type=str,
         default="prefix",
         choices=["prefix", "offset", "model_dims_prefix"],
-        help=(
-            "How to read qpos/qvel out of each simulated x[t]. "
-            "'prefix' assumes x[:nq+nv]=[qpos,qvel] with nq=7+n_joints. "
-            "'offset' uses --offset. "
-            "'model_dims_prefix' uses model.nq/nv from the prefix."
-        ),
+        help="How to read qpos/qvel out of each simulated x[t].",
     )
     p.add_argument("--offset", type=int, default=0, help="Offset into x[t] if --layout=offset.")
 
@@ -602,30 +566,17 @@ def parse_args():
 
     p.add_argument("--show-ground", action="store_true", help="Render a visual-only ground plane via user geoms.")
 
-    # SLS / Phi_u feedback options
     p.add_argument(
         "--use-sls-feedback",
         action="store_true",
-        help="If NPZ has Phi_u, apply u = u_nom + Phi_u*w_history and infer w via E.",
+        help="If NPZ has Phi_u, apply u = u_nom + Phi_u*w_history (w sampled) and disturbed state steps.",
     )
-    p.add_argument(
-        "--E-scale",
-        type=float,
-        default=0.05,
-        help="Diagonal value for E on the first k diagonals.",
-    )
-    p.add_argument(
-        "--E-first-k",
-        type=int,
-        default=2,
-        help="Number of leading diagonals of E to set to E-scale (rest zeros).",
-    )
-
+    p.add_argument("--E-scale", type=float, default=0.1, help="Diagonal value for E on the first k diagonals.")
+    p.add_argument("--E-first-k", type=int, default=2, help="Number of leading diagonals to set to E-scale.")
     return p.parse_args()
 
 
 def main():
-    # Keep your typical x64 setting for dynamics fidelity
     jax.config.update("jax_enable_x64", True)
 
     args = parse_args()

@@ -123,7 +123,7 @@ x_min = -x_max
 state_box_constraints = make_state_box_constraints(x_min, x_max)
 
 # Obstacles: each row is [x, y, radius]
-obstacles = jnp.array([[2.0, 0.1, 0.43], [2.7, 1.5, 0.43]])
+obstacles = jnp.array([[2.0, 0.1, 0.43], [2.0, -0.9, 0.43], [2.7, 1.5, 0.43]])
 
 # Cylinder pillar height (visual only)
 OBSTACLE_HEIGHT = 2  # meters

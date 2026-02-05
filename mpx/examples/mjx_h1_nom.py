@@ -1,6 +1,3 @@
-from jax import config
-config.update("jax_enable_x64", True)
-
 import os
 import sys
 from timeit import default_timer as timer
@@ -32,8 +29,8 @@ jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
 from mpx.primal_dual_ilqr.primal_dual_ilqr.admm_tvlqr import ADMMConfig
 from mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers import SQPConfig, SLSConfig
 
-import mpx.utils.mpc_wrapper_reference_shifter as mpc_wrapper
-import mpx.config.config_h1_sls_expe as config
+import mpx.utils.mpc_wrapper as mpc_wrapper
+import mpx.config.config_h1 as config
 
 
 # -----------------------------
@@ -69,8 +66,7 @@ def make_constant_disturbance(n: int, alpha: float) -> Callable[[jnp.ndarray], j
     def disturbance(X_prefix: jnp.ndarray) -> jnp.ndarray:
         T = X_prefix.shape[0]
         diag = jnp.zeros(n, dtype=X_prefix.dtype)
-        diag = diag.at[0:3].set(alpha)
-        diag = diag.at[26:29].set(0.01)
+        diag = diag.at[:2].set(alpha)
         E0 = jnp.diag(diag)
         return jnp.broadcast_to(E0, (T, n, n))
 
@@ -118,7 +114,7 @@ def add_cylinder_pillar(
 # -----------------------------
 # Problem setup
 # -----------------------------
-E_mag = 0.025
+E_mag = 0.05
 alpha_sim = E_mag * config.dt
 disturbance = make_constant_disturbance(n=config.n, alpha=alpha_sim)
 
@@ -127,7 +123,7 @@ x_min = -x_max
 state_box_constraints = make_state_box_constraints(x_min, x_max)
 
 # Obstacles: each row is [x, y, radius]
-obstacles = jnp.array([[0.6, 0.1, 0.43]])
+obstacles = jnp.array([[2.0, 0.1, 0.43], [2.0, -0.9, 0.43], [2.7, 1.5, 0.43]])
 
 # Cylinder pillar height (visual only)
 OBSTACLE_HEIGHT = 2  # meters
@@ -136,7 +132,7 @@ OBSTACLE_HEIGHT = 2  # meters
 # MuJoCo model
 # -----------------------------
 model = mujoco.MjModel.from_xml_path(
-    os.path.join(dir_path, "..", "..", "data", "unitree_h1", "mjx_scene_h1_walk.xml")
+    os.path.join(dir_path, "..", "data", "unitree_h1", "mjx_scene_h1_walk.xml")
 )
 data = mujoco.MjData(model)
 
@@ -159,10 +155,10 @@ sls_config = SLSConfig(
     enable_fastsls=True,
 )
 sqp_config = SQPConfig(
-    max_sqp_iterations=50,
+    max_sqp_iterations=1,
 )
 
-num_constraints = 5
+num_constraints = 6
 
 initial_state = jnp.concatenate(
     [
@@ -194,40 +190,97 @@ mpc = mpc_wrapper.MPCControllerWrapper(
 # Initialize sim state
 data.qpos = np.array(jnp.concatenate([config.p0, config.quat0, config.q0]), dtype=np.float64)
 
-ref_base_lin_vel = jnp.array([0.75, 0.0, 0.0])
-ref_base_ang_vel = jnp.array([0.0, 0.0, 0.0])
+# -----------------------------
+# Run loop
+# -----------------------------
+tau = jnp.zeros(config.n_joints)
 
-inp = np.array(
-    [
-        float(ref_base_lin_vel[0]),
-        float(ref_base_lin_vel[1]),
-        float(ref_base_lin_vel[2]),
-        float(ref_base_ang_vel[0]),
-        float(ref_base_ang_vel[1]),
-        float(ref_base_ang_vel[2]),
-        1.0,
-    ],
-    dtype=np.float64,
-)
-qpos = data.qpos.copy()
-qvel = data.qvel.copy()
-# Set this to the current contact state to use blind step adaptation
-contact = np.zeros(config.n_contact, dtype=np.float64)
-tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u, parameter = mpc.run(qpos, qvel, inp, contact, use_xin_reference=False)
-for zi in range(1):
-    tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u, parameter = mpc.run(qpos, qvel, inp, contact, use_xin_reference=True)
-outdir = "mpc_data"
-os.makedirs(outdir, exist_ok=True)
+# Cache obstacle array as numpy for rendering (avoid JAX->numpy every frame)
+obstacles_np = np.array(obstacles, dtype=np.float64)
+log_Phi_x = []
+log_Phi_u = []
+log_X = []
 
-save_path = os.path.join(outdir, "h1_mpc_rollout.npz")
+with mujoco.viewer.launch_passive(model, data) as viewer:
+    mujoco.mj_step(model, data)
+    viewer.sync()
 
-np.savez(
-    save_path,
-    X=np.asarray(X),
-    U=np.asarray(U),
-    V=np.asarray(V),
-    Phi_x=np.asarray(Phi_x),
-    Phi_u=np.asarray(Phi_u),
-    parameter=np.asarray(parameter),
-    obstacles=np.asarray(obstacles)
-)
+    delay = int(0 * sim_frequency)
+    print("Delay:", delay)
+
+    mpc.robot_height = config.robot_height
+    mpc.reset(np.array(data.qpos.copy()), np.array(data.qvel.copy()))
+
+    counter = 0
+
+    while viewer.is_running():
+        qpos = data.qpos.copy()
+        qvel = data.qvel.copy()
+        # print(qpos[:3])
+
+        # MPC update
+        if counter % int(sim_frequency / config.mpc_frequency) == 0 or counter == 0:
+            if counter != 0:
+                for _ in range(delay):
+                    qpos = data.qpos.copy()
+                    qvel = data.qvel.copy()
+                    tau_fb = -3.0 * (qvel[6 : 6 + config.n_joints])
+                    data.ctrl = np.array(tau, dtype=np.float64) + np.array(tau_fb, dtype=np.float64)
+                    mujoco.mj_step(model, data)
+                    counter += 1
+
+            ref_base_lin_vel = jnp.array([0.5, 0.0, 0.0])
+            ref_base_ang_vel = jnp.array([0.0, 0.0, 0.0])
+
+            inp = np.array(
+                [
+                    float(ref_base_lin_vel[0]),
+                    float(ref_base_lin_vel[1]),
+                    float(ref_base_lin_vel[2]),
+                    float(ref_base_ang_vel[0]),
+                    float(ref_base_ang_vel[1]),
+                    float(ref_base_ang_vel[2]),
+                    1.0,
+                ],
+                dtype=np.float64,
+            )
+
+            # Set this to the current contact state to use blind step adaptation
+            contact = np.zeros(config.n_contact, dtype=np.float64)
+
+            start = timer()
+            tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u, parameter = mpc.run(
+                qpos, qvel, inp, contact
+            )
+
+            stop = timer()
+            print(f"Time elapsed: {stop - start}")
+            if i != 0:
+                total_time += (stop - start)
+            i += 1
+
+        # Apply control at sim rate (simple damping term)
+        counter += 1
+        data.ctrl = np.array(tau, dtype=np.float64) - 3.0 * qvel[6 : 6 + config.n_joints]
+
+        mujoco.mj_step(model, data)
+
+        # -----------------------------
+        # Render obstacle pillars
+        # -----------------------------
+        clear_user_geoms(viewer)
+
+        # If your ground plane is not at z=0, change base_z accordingly.
+        base_z = 0.0
+        for ox, oy, orad in obstacles_np:
+            # Place cylinder so its base touches the ground: center z = base_z + height/2
+            z_center = base_z + OBSTACLE_HEIGHT / 2.0
+            add_cylinder_pillar(
+                viewer,
+                pos_xyz=np.array([ox, oy, z_center], dtype=np.float64),
+                radius=float(orad - 0.33),
+                height=float(OBSTACLE_HEIGHT),
+                rgba=(1.0, 0.2, 0.2, 0.6),
+            )
+
+        viewer.sync()
