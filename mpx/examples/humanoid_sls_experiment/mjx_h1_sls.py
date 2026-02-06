@@ -1,5 +1,5 @@
 from jax import config
-config.update("jax_enable_x64", True)
+config.update("jax_enable_x64", False)
 
 import os
 import sys
@@ -159,7 +159,7 @@ sls_config = SLSConfig(
     enable_fastsls=True,
 )
 sqp_config = SQPConfig(
-    max_sqp_iterations=50,
+    max_sqp_iterations=10,
 )
 
 num_constraints = 5
@@ -213,9 +213,16 @@ qpos = data.qpos.copy()
 qvel = data.qvel.copy()
 # Set this to the current contact state to use blind step adaptation
 contact = np.zeros(config.n_contact, dtype=np.float64)
+import time
+start = time.perf_counter()
 tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u, parameter = mpc.run(qpos, qvel, inp, contact, use_xin_reference=False)
 for zi in range(1):
+    start_policy = time.perf_counter()
     tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u, parameter = mpc.run(qpos, qvel, inp, contact, use_xin_reference=True)
+end_comp = time.perf_counter()
+
+print("Compilation Time:", (end_comp - start))
+print("Policy time:", (end_comp - start_policy))
 outdir = "mpc_data"
 os.makedirs(outdir, exist_ok=True)
 

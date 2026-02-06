@@ -14,7 +14,7 @@ body_name = ['left_ankle_link','right_ankle_link']
 
 # Time and stage parameters
 dt = 0.05  # Time step in seconds
-N = 50      # Number of stages
+N = 25      # Number of stages
 mpc_frequency = 20  # Frequency of MPC updates in Hz
 
 # Timer values (make sure the values match your intended configuration)
