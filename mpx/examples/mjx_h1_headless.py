@@ -45,7 +45,10 @@ class MPCLogCollector:
     U_list: List[np.ndarray] = field(default_factory=list)
     Phi_x_list: List[np.ndarray] = field(default_factory=list)
     Phi_u_list: List[np.ndarray] = field(default_factory=list)
-    t_list: List[int] = field(default_factory=list)  # MPC update index
+
+    t_list: List[int] = field(default_factory=list)        # MPC update index
+    wall_time_list: List[float] = field(default_factory=list)  # wall-clock (s)
+    sim_time_list: List[float] = field(default_factory=list)   # MuJoCo time (s)
 
     def add(
         self,
@@ -54,23 +57,31 @@ class MPCLogCollector:
         U: np.ndarray,
         Phi_x: np.ndarray,
         Phi_u: np.ndarray,
+        *,
+        wall_time: float,
+        sim_time: float,
     ) -> None:
         self.t_list.append(int(t))
+        self.wall_time_list.append(float(wall_time))
+        self.sim_time_list.append(float(sim_time))
+
         self.X_list.append(np.asarray(X))
         self.U_list.append(np.asarray(U))
         self.Phi_x_list.append(np.asarray(Phi_x))
         self.Phi_u_list.append(np.asarray(Phi_u))
 
     def save(self) -> None:
-        t = np.asarray(self.t_list, dtype=np.int64)
-        X = np.stack(self.X_list, axis=0)
-        U = np.stack(self.U_list, axis=0)
-        Phi_x = np.stack(self.Phi_x_list, axis=0)
-        Phi_u = np.stack(self.Phi_u_list, axis=0)
-
         save_fn = np.savez_compressed if self.compress else np.savez
-        save_fn(self.out_path, t=t, X=X, U=U, Phi_x=Phi_x, Phi_u=Phi_u)
-
+        save_fn(
+            self.out_path,
+            t=np.asarray(self.t_list, dtype=np.int64),
+            wall_time=np.asarray(self.wall_time_list, dtype=np.float64),
+            sim_time=np.asarray(self.sim_time_list, dtype=np.float64),
+            X=np.stack(self.X_list, axis=0),
+            U=np.stack(self.U_list, axis=0),
+            Phi_x=np.stack(self.Phi_x_list, axis=0),
+            Phi_u=np.stack(self.Phi_u_list, axis=0),
+        )
 
 # -----------------------------
 # Constraints / disturbance
@@ -243,12 +254,17 @@ while i < T_STEPS:
         start = timer()
         tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u, parameter = mpc.run(qpos, qvel, inp, contact)
 
+        now = timer()          # wall-clock
+        sim_t = data.time      # MuJoCo simulation time
+
         logger.add(
             t=mpc_update_idx,
             X=X,
             U=U,
             Phi_x=Phi_x,
             Phi_u=Phi_u,
+            wall_time=now,
+            sim_time=sim_t,
         )
         mpc_update_idx += 1
 
