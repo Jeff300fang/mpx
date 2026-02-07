@@ -20,7 +20,7 @@ plt.rcParams.update({
 # -----------------------------
 min_distance = np.load("minimum_distance_np.npy")
 
-dt = 0.01
+dt = 0.02
 t = np.arange(len(min_distance)) * dt
 
 # -----------------------------
