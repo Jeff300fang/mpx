@@ -31,58 +31,6 @@ from mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers import SQPConfig, SLSConfi
 import mpx.utils.mpc_wrapper as mpc_wrapper
 import mpx.config.config_h1 as config
 
-from dataclasses import dataclass, field
-from typing import List
-
-
-@dataclass
-class MPCLogCollector:
-    """Collect (X, U, Phi_x, Phi_u) each MPC solve and save to an .npz."""
-    out_path: str
-    compress: bool = True
-
-    X_list: List[np.ndarray] = field(default_factory=list)
-    U_list: List[np.ndarray] = field(default_factory=list)
-    Phi_x_list: List[np.ndarray] = field(default_factory=list)
-    Phi_u_list: List[np.ndarray] = field(default_factory=list)
-
-    t_list: List[int] = field(default_factory=list)        # MPC update index
-    wall_time_list: List[float] = field(default_factory=list)  # wall-clock (s)
-    sim_time_list: List[float] = field(default_factory=list)   # MuJoCo time (s)
-
-    def add(
-        self,
-        t: int,
-        X: np.ndarray,
-        U: np.ndarray,
-        Phi_x: np.ndarray,
-        Phi_u: np.ndarray,
-        *,
-        wall_time: float,
-        sim_time: float,
-    ) -> None:
-        self.t_list.append(int(t))
-        self.wall_time_list.append(float(wall_time))
-        self.sim_time_list.append(float(sim_time))
-
-        self.X_list.append(np.asarray(X))
-        self.U_list.append(np.asarray(U))
-        self.Phi_x_list.append(np.asarray(Phi_x))
-        self.Phi_u_list.append(np.asarray(Phi_u))
-
-    def save(self) -> None:
-        save_fn = np.savez_compressed if self.compress else np.savez
-        save_fn(
-            self.out_path,
-            t=np.asarray(self.t_list, dtype=np.int64),
-            wall_time=np.asarray(self.wall_time_list, dtype=np.float64),
-            sim_time=np.asarray(self.sim_time_list, dtype=np.float64),
-            X=np.stack(self.X_list, axis=0),
-            U=np.stack(self.U_list, axis=0),
-            Phi_x=np.stack(self.Phi_x_list, axis=0),
-            Phi_u=np.stack(self.Phi_u_list, axis=0),
-        )
-
 # -----------------------------
 # Constraints / disturbance
 # -----------------------------
@@ -199,8 +147,6 @@ data.qpos = np.array(jnp.concatenate([config.p0, config.quat0, config.q0]), dtyp
 # Run loop (HEADLESS)
 # -----------------------------
 tau = jnp.zeros(config.n_joints)
-
-logger = MPCLogCollector(out_path="h1_mpc_rollout_log.npz", compress=True)
 mpc_update_idx = 0
 
 # Prime simulation once (optional but mirrors viewer version)
@@ -256,24 +202,14 @@ while i < T_STEPS:
 
         now = timer()          # wall-clock
         sim_t = data.time      # MuJoCo simulation time
-
-        logger.add(
-            t=mpc_update_idx,
-            X=X,
-            U=U,
-            Phi_x=Phi_x,
-            Phi_u=Phi_u,
-            wall_time=now,
-            sim_time=sim_t,
-        )
         mpc_update_idx += 1
 
         stop = timer()
-        print(f"Time elapsed: {stop - start}")
+        # print(f"Time elapsed: {stop - start}")
         if i != 0:
             total_time += (stop - start)
         i += 1
-        print(i)
+        # print(i)
 
     # Apply control at sim rate (simple damping term)
     counter += 1
@@ -281,5 +217,4 @@ while i < T_STEPS:
     mujoco.mj_step(model, data)
 
 print(total_time / (T_STEPS - 1))
-logger.save()
 mpc_update_idx += 1

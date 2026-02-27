@@ -249,6 +249,8 @@ class MPCControllerWrapper:
         self.rho = jnp.asarray(0.1, dtype=jnp.float32)
         num_obstacles = obstacles.shape[0]
         self.h_ct_ws = jnp.zeros((config.N + 1, num_constraints - num_obstacles))
+        self.beta_ws = jnp.ones((config.N + 1, config.N + 1, num_constraints - num_obstacles)) * 1e-10
+        self.mu_ws = jnp.zeros((config.N + 1, num_constraints))
 
         # Define cost, hessian approximation, and dynamics functions for MPC.
         self.cost = partial(config.cost,config.n_joints, config.n_contact, config.N)
@@ -372,7 +374,7 @@ class MPCControllerWrapper:
         )
 
         # Execute the MPC optimization.
-        X, U, V, w, y, rho, backoffs, Phi_x, Phi_u = self._solve(
+        X, U, V, w, y, rho, backoffs, Phi_x, Phi_u, betaN, muN = self._solve(
             reference,
             parameter,
             self.config.W,
@@ -384,13 +386,22 @@ class MPCControllerWrapper:
             self.y,
             self.rho,
             self.obstacles,
-            self.h_ct_ws
+            self.h_ct_ws, self.beta_ws, self.mu_ws
         )
+        # Shift warm starts
         self.h_ct_ws = jnp.concatenate(
             [backoffs[self.shift:], jnp.tile(backoffs[-1:], (self.shift, 1))],
             axis=0
         )
-        # # Warm-start for the next call: shift trajectories forward.
+        self.beta_ws = jnp.concatenate(
+            [betaN[self.shift:], jnp.tile(betaN[-1:], (self.shift, 1))],
+            axis=0
+        )
+        self.mu_ws = jnp.concatenate(
+            [muN[self.shift:], jnp.tile(muN[-1:], (self.shift, 1))],
+            axis=0
+        )
+        # Warm-start for the next call: shift trajectories forward.
         self.w = jnp.concatenate([w[self.shift:], jnp.tile(w[-1:], (self.shift, 1))], axis=0)
         self.y = jnp.concatenate([y[self.shift:], jnp.tile(y[-1:], (self.shift, 1))], axis=0)
         self.rho = jnp.asarray(rho, dtype=self.rho.dtype)

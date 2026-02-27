@@ -187,13 +187,13 @@ model.opt.timestep = 1.0 / sim_frequency
 admm_config = ADMMConfig(
     eps_abs=1e-2,
     eps_rel=1e-2,
-    condense_block_size=5,
     rho_max=1e5,
 )
 sls_config = SLSConfig(
     max_sls_iterations=2,
     sls_primal_tol=1e-1,
     enable_fastsls=True,
+    warm_start=True,
 )
 sqp_config = SQPConfig(
     max_sqp_iterations=1,
@@ -318,20 +318,20 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         # # -----------------------------
         # # Render obstacle pillars
         # # -----------------------------
-        # clear_user_geoms(viewer)
+        clear_user_geoms(viewer)
 
-        # # If your ground plane is not at z=0, change base_z accordingly.
-        # base_z = 0.0
-        # for ox, oy, orad in obstacles_np:
-        #     # Place cylinder so its base touches the ground: center z = base_z + height/2
-        #     z_center = base_z + OBSTACLE_HEIGHT / 2.0
-        #     add_cylinder_pillar(
-        #         viewer,
-        #         pos_xyz=np.array([ox, oy, z_center], dtype=np.float64),
-        #         radius=float(orad - 0.33),
-        #         height=float(OBSTACLE_HEIGHT),
-        #         rgba=(1.0, 0.2, 0.2, 0.6),
-        #     )
+        # If your ground plane is not at z=0, change base_z accordingly.
+        base_z = 0.0
+        for ox, oy, orad in obstacles_np:
+            # Place cylinder so its base touches the ground: center z = base_z + height/2
+            z_center = base_z + OBSTACLE_HEIGHT / 2.0
+            add_cylinder_pillar(
+                viewer,
+                pos_xyz=np.array([ox, oy, z_center], dtype=np.float64),
+                radius=float(orad - 0.33),
+                height=float(OBSTACLE_HEIGHT),
+                rgba=(1.0, 0.2, 0.2, 0.6),
+            )
 
         viewer.sync()
 
