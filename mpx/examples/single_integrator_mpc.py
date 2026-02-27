@@ -262,7 +262,7 @@ def sim_step(x: jnp.ndarray, u: jnp.ndarray, k: int, dt: float, sigma: float = 0
 # -------------------------
 def main():
     # --- Define Cost ---
-    W = jnp.array([200.0, 200.0, 10.0, 10.0])
+    W = jnp.array([30.0, 30.0, 1.0, 1.0])
 
     nx = 2
     nu = 2
@@ -278,9 +278,9 @@ def main():
     )
 
     admm_cfg = ADMMConfig(
-        eps_abs=1e-2,
+        eps_abs=1e-3,
         eps_rel=0,
-        rho_max=1e3,
+        rho_max=1e2,
         max_iterations=2000,
     )
 
@@ -292,7 +292,7 @@ def main():
     )
 
     sqp_cfg = SQPConfig(
-        max_sqp_iterations=2,
+        max_sqp_iterations=15,
         warm_start=True,
         line_search=True,
     )
@@ -300,8 +300,8 @@ def main():
     # --- Constraints ---
     obstacles = jnp.array([])
 
-    u_min = jnp.array([-2.0, -2.0])
-    u_max = jnp.array([2.0, 2.0])
+    u_min = jnp.array([-1.0, -1.0])
+    u_max = jnp.array([1.0, 1.0])
     constraints_u = make_control_box_constraints(u_min, u_max)
 
     ellipsoid_constraint = make_ellipsoid_constraints(
@@ -326,7 +326,7 @@ def main():
     # You can make this longer than N+1; otherwise the window will just clamp to the last point quickly.
     T_ref = 400
     v_des = 0.6
-    reference_full = make_straight_line_reference(x0=x0, x_goal=x_goal, N=T_ref, dt=dt, v_des=v_des)
+    reference_full = make_straight_line_reference(x0=x0, x_goal=x_goal, N=N, dt=dt, v_des=v_des)
 
     # --- Nominal init (project reference to be strictly outside ellipsoid) ---
     theta = float(jnp.deg2rad(90.0))
@@ -360,7 +360,7 @@ def main():
     # =========================
     # Closed-loop receding-horizon MPC
     # =========================
-    T_sim = 90          # number of MPC steps to execute
+    T_sim = 8         # number of MPC steps to execute
     dist_sigma = 0.0    # set e.g. 0.002 to see robustness effects
 
     xk = jnp.array(x0, dtype=jnp.float64)

@@ -152,7 +152,7 @@ sls_cfg = SLSConfig(
 )
 
 sqp_cfg = SQPConfig(
-    max_sqp_iterations = 50,
+    max_sqp_iterations = 15,
     warm_start=True,
     line_search=True,
 )
