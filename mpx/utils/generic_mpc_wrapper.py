@@ -9,6 +9,22 @@ import jax.numpy as jnp
 
 import mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers as optimizers
 from mpx.primal_dual_ilqr.primal_dual_ilqr.optimizers import SQPConfig
+from mpx.linearization_sls.src.rhs_eval import build_auto_rhs_analytic
+
+
+def pack_dynamics_as_single_input(dynamics, nx: int, nu: int, *, parameter, t_dim: int = 1, t_as_scalar: bool = True):
+    dyn = partial(dynamics, parameter=parameter)  # binds keyword-only arg
+
+    D = nx + nu + t_dim
+
+    def f_flat(z: jnp.ndarray) -> jnp.ndarray:
+        x = z[:nx]
+        u = z[nx:nx+nu]
+        t_slice = z[nx+nu:nx+nu+t_dim]
+        t = t_slice[0] if (t_dim == 1 and t_as_scalar) else t_slice
+        return dyn(x, u, t)
+
+    return f_flat, D
 
 class GenericMPCControllerWrapper:
     def __init__(
@@ -40,6 +56,10 @@ class GenericMPCControllerWrapper:
         self.obstacles = obstacles
         num_obstacles = self.obstacles.shape[0]
         self.h_ct_ws = jnp.zeros((config.N + 1, num_constraints - num_obstacles))
+        self.beta_ws = jnp.ones((config.N + 1, config.N + 1, num_constraints - num_obstacles)) * 1e-10
+        self.mu_ws = jnp.zeros((config.N + 1, num_constraints))
+        self.Phi_x_ws = jnp.zeros((config.N + 1, config.N + 1, config.n, config.n))
+        self.Phi_u_ws = jnp.zeros((config.N, config.N + 1, config.nu, config.n))
 
         # Warm starts
         # self.U0 = jnp.tile(jnp.zeros((config.nu,)), (config.N, 1))         # (T, nu)
@@ -62,6 +82,19 @@ class GenericMPCControllerWrapper:
         # mpc signature in your pasted file:
         # mpc(cost, dynamics, hessian_approx, limited_memory, constraints, disturbance,
         #     reference, parameter, W, x0, X_in, U_in, V_in, w, y, rho)
+        D = config.n + config.nu
+        V = D + 1
+        f_flat, D_flat = pack_dynamics_as_single_input(
+            dynamics,
+            nx=config.n,
+            nu=config.nu,
+            parameter=config.dt,     # whatever your "parameter" is
+            t_dim=1,
+            t_as_scalar=True
+        )
+        _, rhs_tm_fn = build_auto_rhs_analytic(f_flat, D=D_flat, V=V)
+        # TODO: Make this an argument
+        splts_cfg = (4, 4, 4, 4, 1)
         work = partial(
             optimizers.mpc,
             self.sls_config,
@@ -73,6 +106,8 @@ class GenericMPCControllerWrapper:
             limited_memory,
             constraints,
             disturbance,
+            rhs_tm_fn,
+            splts_cfg
         )
         self._solve = jax.jit(work)
 
@@ -96,7 +131,7 @@ class GenericMPCControllerWrapper:
         self._update_and_extract = update_and_extract
 
     def run(self, x0: jnp.ndarray, reference: jnp.ndarray, parameter: Any):
-        X, U, V, w, y, rho, backoffs, Phi_x, Phi_u = self._solve(
+        X, U, V, w, y, rho, backoffs, Phi_x, Phi_u, betaN, muN = self._solve(
             reference,
             parameter,
             self.config.W,
@@ -108,12 +143,23 @@ class GenericMPCControllerWrapper:
             self.y,
             self.rho,
             self.obstacles,
-            self.h_ct_ws,
+            self.h_ct_ws, self.beta_ws, self.mu_ws, self.Phi_x_ws, self.Phi_u_ws
+        )
+        self.h_ct_ws = jnp.concatenate(
+            [backoffs[self.shift:], jnp.tile(backoffs[-1:], (self.shift, 1))],
+            axis=0
+        )
+        self.beta_ws = jnp.concatenate(
+            [betaN[self.shift:], jnp.tile(betaN[-1:], (self.shift, 1))],
+            axis=0
+        )
+        self.mu_ws = jnp.concatenate(
+            [muN[self.shift:], jnp.tile(muN[-1:], (self.shift, 1))],
+            axis=0
         )
 
         # Warm-start ADMM-ish states
         # TODO: Make this an option to warm start / not warm
-        s = self.shift
         # self.w = jnp.zeros_like(w)
         # self.y = jnp.zeros_like(y)
         # Car
@@ -124,9 +170,10 @@ class GenericMPCControllerWrapper:
         rho = jnp.asarray(rho, dtype=self.rho.dtype)
         # self.rho = jnp.maximum(jnp.minimum(rho, 1e3) * 0.9, 0.01) # car
         # self.rho = jnp.maximum(jnp.minimum(rho, 0.1) * 0.9, 0.01) # pendulum 
-        rho = jnp.array(0.1)
+        rho = jnp.array(10.0)
         self.y = rho / self.rho * self.y
 
         self.U0, self.X0, self.V0 = self._update_and_extract(U, X, V, x0)
-
+        self.Phi_u_ws = Phi_u
+        self.Phi_x_ws = Phi_x
         return U[0], X, U, V, backoffs, Phi_x, Phi_u
