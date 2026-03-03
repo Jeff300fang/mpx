@@ -103,7 +103,7 @@ admm_config = ADMMConfig(
     rho_max=1e5,
 )
 sls_config = SLSConfig(
-    max_sls_iterations=2,
+    max_sls_iterations=1,
     sls_primal_tol=1e-1,
     enable_fastsls=True,
 )
