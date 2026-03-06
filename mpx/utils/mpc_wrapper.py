@@ -394,7 +394,7 @@ class MPCControllerWrapper:
             axis=0
         )
         self.beta_ws = jnp.concatenate(
-            [betaN[self.shift:], jnp.tile(betaN[-1:], (self.shift, 1))],
+            [betaN[self.shift:], jnp.tile(betaN[-1:], (self.shift, 1, 1))],
             axis=0
         )
         self.mu_ws = jnp.concatenate(

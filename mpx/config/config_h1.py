@@ -13,8 +13,8 @@ contact_frame = ['FL','RL','FR','RR']
 body_name = ['left_ankle_link','right_ankle_link']
 
 # Time and stage parameters
-dt = 0.02  # Time step in seconds
-N = 25      # Number of stages
+dt = 0.01  # Time step in seconds
+N = 50      # Number of stages
 mpc_frequency = 50  # Frequency of MPC updates in Hz
 
 # Timer values (make sure the values match your intended configuration)
