@@ -672,7 +672,7 @@ def main():
     nc = 2 * nu + 2 * n + n_obs
 
     # disturbance model for the controller (E[t] = alpha_sim * I)
-    E_mag = 0.01
+    E_mag = 0.015
     alpha_sim = E_mag * dt
     disturbance = make_constant_disturbance(n=n, alpha=alpha_sim)
 
