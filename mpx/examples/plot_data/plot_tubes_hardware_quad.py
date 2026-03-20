@@ -40,8 +40,8 @@ num_files = 1200
 output_mp4 = "xrti_box_tubes.mp4"   # saved in current folder
 frames_dir = "frames_xrti"
 ffmpeg_bin = "ffmpeg"
-obstacle_center = np.array([1.2, -0.4])
-obstacle_radius = 0.5
+obstacle_center = np.array([1.2, -0.5])
+obstacle_radius = 0.6
 fps = 20
 dpi = 160
 
@@ -134,7 +134,7 @@ pad = 0.5
 
 ax.set_xlim(xmin - pad, xmax + pad)
 ax.set_ylim(ymin - pad, ymax + pad)
-ax.set_aspect("equal", adjustable="box")
+ax.set_aspect("auto")
 ax.set_xlabel(r"$p_x$")
 ax.set_ylabel(r"$p_y$")
 
@@ -226,70 +226,62 @@ def export_mp4():
 def plot_obstacle_distance(all_plans, all_upper, all_lower,
                            obstacle_center,
                            obstacle_radius,
-                           save_path="distance_vs_tube.png"):
-    """
-    Plots:
-        distance(current_state, obstacle_center) - obstacle_radius
-    and overlays the tube bounds (upper / lower) from the LAST tube.
-
-    all_plans : list of (T,2)
-    all_upper : list of (T,2)
-    all_lower : list of (T,2)
-    """
-
+                           save_path="distance_vs_tube.pdf"):
     N = len(all_plans)
 
-    # -----------------------------------------
-    # distance from current state to obstacle
-    # -----------------------------------------
     dist = np.zeros(N)
-
     for i in range(N):
-        p = all_plans[i][0]          # current executed state
-        dist[i] = np.linalg.norm(p - obstacle_center) - obstacle_radius
+        p = all_plans[i][0]
+        dist[i] = np.linalg.norm(p - obstacle_center)
 
-    # -----------------------------------------
-    # tube diagonal sizes
-    # -----------------------------------------
     tube_upper = np.zeros(N)
     tube_lower = np.zeros(N)
-
     for i in range(N):
         up = all_upper[i][-1]
         lo = all_lower[i][-1]
-
-        # diagonal tube width
         width = np.linalg.norm(up - lo) / 2.0
-
         tube_upper[i] = dist[i] + width
         tube_lower[i] = dist[i] - width
 
-    # -----------------------------------------
-    # plot
-    # -----------------------------------------
-    fig, ax = plt.subplots(figsize=(8,4))
+    dt = 0.02
+    t = np.arange(N) * dt
 
-    ax.plot(dist, linewidth=2.5, label="Distance to obstacle")
+    fig, ax = plt.subplots(figsize=(10, 4.5))
+
+    ax.plot(t, dist, linewidth=2.5, label="Distance to obstacle")
 
     ax.fill_between(
-        np.arange(N),
+        t,
         tube_lower,
         tube_upper,
         alpha=0.25,
         label="Tube bound"
     )
 
-    ax.axhline(0, linestyle="--", linewidth=2)
+    ax.axhline(
+        obstacle_radius,
+        linestyle="--",
+        linewidth=2,
+        color="tab:blue",
+        label=f"Obstacle radius ({obstacle_radius:.1f} m)"
+    )
 
-    ax.set_xlabel("Time step")
-    ax.set_ylabel("Distance")
-    ax.set_title("Obstacle Distance vs Robust Tube Bound")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Distance [m]")
+    ax.margins(x=0.0, y=0.1)
 
-    ax.legend()
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.25),
+        ncol=3,
+        frameon=True,
+        fontsize=16,
+        handlelength=2.0,
+        columnspacing=1.4
+    )
 
-    fig.tight_layout()
+    fig.subplots_adjust(bottom=0.30)
     fig.savefig(save_path, dpi=200)
-
     print("Saved:", save_path)
 
 # -----------------------------------------------------------------------------
