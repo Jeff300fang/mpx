@@ -17,7 +17,8 @@ dependencies = [
     "mujoco",
     "mujoco-mjx",
     "gym-quadruped",
-    "trajax @ git+https://github.com/google/trajax"
+    "trajax @ git+https://github.com/google/trajax",
+    "osqp"
 ]
 
 [project.urls]

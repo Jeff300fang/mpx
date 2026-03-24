@@ -12,8 +12,10 @@ contact_frame = ['FL', 'FR', 'RL', 'RR']
 body_name = ['FL_calf', 'FR_calf', 'RL_calf', 'RR_calf']
 
 # Time and stage parameters
-dt = 0.005 # Time step in seconds
-N = 150         # Number of stages
+# dt = 0.0035 # Time step in seconds
+N = 200         # Number of stages
+dt = 0.75 / N
+# dt = 0.01
 mpc_frequency = 100  # Frequency of MPC updates in Hz
 
 # Timer values (make sure the values match your intended configuration)

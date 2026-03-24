@@ -11,6 +11,8 @@ from typing import Callable
 jax.config.update("jax_compilation_cache_dir", "./jax_cache")
 jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
 jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
+# jax.config.update("jax_disable_jit", True)   
+# jax.config.update("jax_platform_name", "cpu")
 # jax.config.update("jax_log_compiles", True)
 # jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
  
@@ -124,11 +126,11 @@ key = jax.random.PRNGKey(1)
 # centers, radii = random_circles(key, K=num_constraints, radius=0.43)
 
 # Predefined obstacles
-num_constraints = 5
+num_constraints = 2
 # obstacles = jnp.array([[1.5, 0.2, 0.6]])
 obstacles = jnp.array([[1.0, -0.3, 0.6], [2.3, 1.3, 0.6]])
 obstacles = jnp.array([[1.0, -0.5, 0.6]])
-# obstacles = jnp.array([])
+obstacles = jnp.array([])
 centers = jnp.array([[1.0, -0.3], [2.3, 1.3]])
 
 radii = jnp.array([0.6, 0.6])
@@ -317,7 +319,6 @@ for i in range(700):
     qvel = env.mjData.qvel.copy()
     w,x,y,z = qpos[3:7]
     r, p, y = quaternion_to_rpy(w,x,y,z)
-    print(r, p, y)
     if (counter % (sim_frequency / mpc_frequency) == 0 or counter == 0):
     
  
@@ -343,17 +344,19 @@ for i in range(700):
                 tau_fb = 10*(q-qpos[7:7+config.n_joints]) -2*(qvel[6:6+config.n_joints])
                 state, reward, is_terminated, is_truncated, info = env.step(action=tau + tau_fb)
                 counter += 1
-        start = timer()
         qpos_j = jnp.asarray(qpos, dtype=jnp.float32)
         qvel_j = jnp.asarray(qvel, dtype=jnp.float32)
         inp_j  = jnp.asarray(input, dtype=jnp.float32)
         ct_j   = jnp.asarray(contact, dtype=jnp.bool_)
-        tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u, parameter = mpc.run(qpos,qvel,input,contact)   
+        start = timer()
+        tau, q, dq, X, U, V, backoffs, Phi_x, Phi_u, parameter = mpc.run(qpos,qvel,input,contact)
         stop = timer()
         if i != 0:
             total_time += (stop - start)
             total_iterations += 1
-        print("Time taken for MPC: ", stop-start)   
+            print("Current average:", total_time / total_iterations)
+        print("Time taken for MPC: ", stop-start) 
+        print(total_iterations)
         render_obstacles(centers, radii)
         # for i in range(4):
         #     render_sphere(env.viewer,
